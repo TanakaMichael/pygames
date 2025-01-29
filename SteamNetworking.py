@@ -125,3 +125,30 @@ if initialize_steam():
 
 steam_id = get_steam_id()
 print(f"🎮 自分の Steam ID: {steam_id}")
+
+def get_friend_lobbies() -> list[int]:
+    """
+    C++側の RefreshFriendLobbies() を呼んで、その結果のロビーID一覧をPythonのlistで返す
+    """
+    n = refresh_friend_lobbies()
+    result = []
+    for i in range(n):
+        lobby_id = get_friend_lobby_id_by_index(i)
+        result.append(lobby_id)
+    return result
+
+def get_friend_lobbies_richpresence() -> list[int]:
+    n = refresh_friend_lobbies_richpresence()
+    result = []
+    for i in range(n):
+        lobby_id = get_friend_lobby_id_by_index_richpresence(i)
+        result.append(lobby_id)
+    return result
+
+def get_public_lobbies() -> list[int]:
+    n = refresh_public_lobbies()
+    result = []
+    for i in range(n):
+        lobby_id = get_public_lobby_id_by_index(i)
+        result.append(lobby_id)
+    return result
