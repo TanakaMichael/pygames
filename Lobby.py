@@ -18,7 +18,7 @@ server_id = get_steam_id()
 print(f"🎮 サーバーの Steam ID: {server_id}")
 
 # **ロビーを作成**
-LOBBY_TYPE = 2  # 1 = フレンドのみ, 2 = 公開, 3 = 非公開
+LOBBY_TYPE = 1  # 1 = フレンドのみ, 2 = 公開, 3 = 非公開
 MAX_PLAYERS = 4
 lobby_id = create_lobby(LOBBY_TYPE, MAX_PLAYERS)
 
