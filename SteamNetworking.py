@@ -4,7 +4,9 @@ import os
 # DLL をロード
 dll_path = os.path.abspath("./SteamNetworkingWrapper.dll")
 steam_dll = ctypes.CDLL(dll_path)
-
+# SteamCallbacks を実行
+run_steam_callbacks = steam_dll.RunSteamCallbacks
+run_steam_callbacks.restype = None
 # Steam API 初期化
 initialize_steam = steam_dll.InitializeSteam
 initialize_steam.restype = ctypes.c_bool

@@ -8,7 +8,7 @@ steamworks = STEAMWORKS()
 steamworks.initialize()
 
 # SteamNetworking DLL のロード
-from SteamNetworking import initialize_steam, get_steam_id, send_p2p_message, receive_p2p_message, create_lobby, check_lobby_join, get_steam_name, check_lobby_leave
+from SteamNetworking import initialize_steam, get_steam_id, send_p2p_message, receive_p2p_message, create_lobby, check_lobby_join, get_steam_name, check_lobby_leave, set_lobby_rich_presence, run_steam_callbacks
 
 if initialize_steam():
     print("✅ Steam API 初期化成功")
@@ -21,7 +21,7 @@ print(f"🎮 サーバーの Steam ID: {server_id}")
 LOBBY_TYPE = 1  # 1 = フレンドのみ, 2 = 公開, 3 = 非公開
 MAX_PLAYERS = 4
 lobby_id = create_lobby(LOBBY_TYPE, MAX_PLAYERS)
-
+set_lobby_rich_presence(lobby_id)  # ロビー情報を通知
 if lobby_id == 0:
     print("❌ ロビーの作成に失敗しました")
     exit()
@@ -37,6 +37,7 @@ def get_clients():
 
 # メッセージ受信ループ
 while True:
+    run_steam_callbacks()
     buffer = ctypes.create_string_buffer(512)
     sender_steam_id = ctypes.c_uint64()
 
