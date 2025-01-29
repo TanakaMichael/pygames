@@ -23,11 +23,6 @@ receive_p2p_message = steam_dll.ReceiveP2PMessage
 receive_p2p_message.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.POINTER(ctypes.c_uint64)]
 receive_p2p_message.restype = ctypes.c_bool
 
-# **ロビーの数を取得（フレンドのみ / すべて）**
-get_num_lobbies = steam_dll.GetNumLobbies
-get_num_lobbies.argtypes = [ctypes.c_bool]
-get_num_lobbies.restype = ctypes.c_int
-
 # **インデックスからロビー ID を取得**
 get_lobby_by_index = steam_dll.GetLobbyByIndex
 get_lobby_by_index.argtypes = [ctypes.c_int]
@@ -68,12 +63,59 @@ get_steam_name = steam_dll.GetSteamName
 get_steam_name.argtypes = [ctypes.c_uint64, ctypes.c_char_p, ctypes.c_int]
 get_steam_name.restype = None
 
+# (1) フレンドロビーの検索
+refresh_friend_lobbies = steam_dll.RefreshFriendLobbies
+refresh_friend_lobbies.restype = ctypes.c_int  # 戻り値はロビー数
+
+# (2) フレンドロビーID取得
+get_friend_lobby_id_by_index = steam_dll.GetFriendLobbyIDByIndex
+get_friend_lobby_id_by_index.argtypes = [ctypes.c_int]
+get_friend_lobby_id_by_index.restype = ctypes.c_uint64
+
+# (3) パブリックロビーの検索
+refresh_public_lobbies = steam_dll.RefreshPublicLobbies
+refresh_public_lobbies.restype = ctypes.c_int
+
+# (4) パブリックロビーID取得
+get_public_lobby_id_by_index = steam_dll.GetPublicLobbyIDByIndex
+get_public_lobby_id_by_index.argtypes = [ctypes.c_int]
+get_public_lobby_id_by_index.restype = ctypes.c_uint64
 
 
 # **ロビー作成**
 create_lobby = steam_dll.CreateLobby
 create_lobby.argtypes = [ctypes.c_int, ctypes.c_int]
 create_lobby.restype = ctypes.c_uint64
+
+
+# (A) JoinLobby
+join_lobby = steam_dll.JoinLobby
+join_lobby.argtypes = [ctypes.c_uint64]
+join_lobby.restype = ctypes.c_bool
+
+# (B) SetLobbyRichPresence
+set_lobby_rich_presence = steam_dll.SetLobbyRichPresence
+set_lobby_rich_presence.argtypes = [ctypes.c_uint64]
+set_lobby_rich_presence.restype = None
+
+# (C) ClearRichPresence
+clear_rich_presence = steam_dll.ClearRichPresence
+clear_rich_presence.restype = None
+
+# (D) GetFriendLobbyRichPresence
+get_friend_lobby_rich_presence = steam_dll.GetFriendLobbyRichPresence
+get_friend_lobby_rich_presence.argtypes = [ctypes.c_uint64]
+get_friend_lobby_rich_presence.restype = ctypes.c_uint64
+
+# (E) RefreshFriendLobbiesRichPresence
+refresh_friend_lobbies_richpresence = steam_dll.RefreshFriendLobbiesRichPresence
+refresh_friend_lobbies_richpresence.restype = ctypes.c_int
+
+# (F) GetFriendLobbyIDByIndex_RichPresence
+get_friend_lobby_id_by_index_richpresence = steam_dll.GetFriendLobbyIDByIndex_RichPresence
+get_friend_lobby_id_by_index_richpresence.argtypes = [ctypes.c_int]
+get_friend_lobby_id_by_index_richpresence.restype = ctypes.c_uint64
+
 
 # 動作確認
 if initialize_steam():
