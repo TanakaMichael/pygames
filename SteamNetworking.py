@@ -118,6 +118,9 @@ get_friend_lobby_id_by_index_richpresence = steam_dll.GetFriendLobbyIDByIndex_Ri
 get_friend_lobby_id_by_index_richpresence.argtypes = [ctypes.c_int]
 get_friend_lobby_id_by_index_richpresence.restype = ctypes.c_uint64
 
+accept_p2p_session = steam_dll.AcceptP2PSession
+accept_p2p_session.argtypes = [ctypes.c_uint64]
+accept_p2p_session.restype = ctypes.c_bool
 
 # 動作確認
 if initialize_steam():

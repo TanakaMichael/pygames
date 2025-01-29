@@ -40,7 +40,11 @@ while True:
 
     if message.lower() == "exit":
         break
-
+    # **最初に数回 PING を送信し、接続を安定させる**
+    for _ in range(3):
+        json_message = json.dumps({"message": "PING"})
+        sn.send_p2p_message(host_id, json_message.encode())
+        time.sleep(0.1)
     # JSON 形式で送信
     json_message = json.dumps({"message": message, "data": data})
     sn.send_p2p_message(host_id, json_message.encode())
