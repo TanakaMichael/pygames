@@ -22,7 +22,7 @@ class GameManager(GameObject):
         print(f"🎮 プレイヤー {steam_id} が参加")
 
         # **新しいネットワークオブジェクトを作成**
-        self.scene = GameSceneManager.instance().current_scene
+        self.scene = GameSceneManager.get_instance().current_scene
         self.scene.spawn_object(Snake(f"Player_{steam_id}", steam_id=steam_id))
 
     def on_player_leave(self, steam_id):

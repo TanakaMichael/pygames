@@ -53,9 +53,16 @@ class NetworkManager(Global):
 
     def join_server(self):
         """クライアントとしてサーバーに接続"""
-        num_lobbies = sn.refresh_friend_lobbies()
-        if num_lobbies > 0:
-            self.lobby_id = sn.get_friend_lobby_id_by_index(0)
+        if sn.initialize_steam():
+            print("✅ Steam API 初期化成功")
+        self.local_steam_id = sn.get_steam_id()
+        print(f"🎮 自分の Steam ID: {self.local_steam_id}")
+
+        lobbies = sn.get_friend_lobbies_richpresence()
+        if len(lobbies) > 0:
+            self.lobby_id = lobbies[0]
+            sn.join_lobby(lobby_id)
+            sn.set_lobby_rich_presence(lobby_id)
         else:
             print("❌ 参加できるロビーがありません")
             exit()
