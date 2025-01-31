@@ -57,8 +57,8 @@ class GameSceneManager(Global):
             self.rebuild_scene(data["scene_data"], data["scene_id"])
         elif data.get("type") == "request_scene_sync" and self.network_manager.is_server:
             sender_id = data["sender_id"]
-            print(f"📡 クライアント {sender_id.value} からシーン同期リクエスト")
-            self.send_scene_sync(sender_id.value)
+            print(f"📡 クライアント {sender_id} からシーン同期リクエスト")
+            self.send_scene_sync(sender_id)
         elif data.get("type") == "scene_objects" and not self.network_manager.is_server:
             self.apply_scene_objects(data)
         elif data.get("type") == "request_scene_objects" and self.network_manager.is_server:
