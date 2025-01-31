@@ -1,7 +1,6 @@
 import pygame
 from core.component.component import Component
 from core.component.transform import Transform
-from core.game_scene_manager import GameSceneManager
 import math
 class SpriteRenderer(Component):
     """スプライトを描画するコンポーネント (2D)"""
@@ -25,6 +24,7 @@ class SpriteRenderer(Component):
             raise ValueError("SpriteRenderer は Transform コンポーネントを必要とします")
 
         # **カメラを取得**
+        from core.game_scene_manager import GameSceneManager
         self.camera = GameSceneManager.get_instance().get_current_scene().camera
 
         self.load_image()

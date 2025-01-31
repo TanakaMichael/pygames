@@ -17,9 +17,29 @@ class GameScene:
         self.canvas = Canvas(screen)  # **各シーンに `Canvas` を持たせる**
         self.active = False  # 初期は非アクティブ
         self.network_manager = NetworkManager.get_instance()  # **NetworkManager の参照を保持**
+
     def start(self):
         """シーンがアクティブになったとき"""
         pass
+    def end(self):
+        """シーンが非アクティブになったとき"""
+        pass
+
+    def get_object(self, name):
+        """指定した名前の GameObject を取得"""
+        for obj in self.objects:
+            if obj.name == name:
+                return obj
+        return None
+    def get_object_by_steam_id(self, steam_id):
+        """指定した network_id の GameObject を取得"""
+        for obj in self.objects:
+            if isinstance(obj, NetworkGameObject) and obj.steam_id == steam_id:
+                return obj
+        return
+    def get_all_network_objects(self):
+        """現在のシーン内の `NetworkGameObject` をすべて取得"""
+        return [obj for obj in self.objects if isinstance(obj, NetworkGameObject)]
 
     def add_object(self, game_object):
         """シーンに GameObject を追加"""
@@ -37,33 +57,6 @@ class GameScene:
                 return True
         print(f"⚠ `network_id={network_id}` の `NetworkGameObject` が見つかりません")
         return False
-    def spawn_object(self, game_object):
-        """オブジェクトをシーンに追加し、必要なら全クライアントにスポーン指示を送る"""
-        if isinstance(game_object, NetworkGameObject):
-            # **サーバーならクライアントにスポーン通知を送る**
-            if self.network_manager.is_server:
-                self.broadcast_spawn(game_object)
-        self.add_object(game_object)
-    def broadcast_spawn(self, game_object):
-        """サーバーがクライアントにスポーン通知を送信"""
-        spawn_data = {
-            "type": "spawn",
-            "network_id": game_object.network_id,
-            "class_name": game_object.__class__.__name__,  # **クラス名を送信**
-        }
-        self.network_manager.broadcast(spawn_data)
-    def spawn_network_object(self, data):
-        """クライアントがサーバーからのオブジェクト生成命令を受け取る"""
-        network_id = data["network_id"]
-        class_name = data["class_name"]
-
-        new_object = NetworkObjectFactory.create_object(class_name, network_id) # 指定されたクラスのinstanceを生成
-        if new_object:
-            self.spawn_object(new_object)
-    def handle_network_data(self, data):
-        """クライアントがサーバーからのネットワークデータを受信したときの処理"""
-        if data.get("type") == "spawn":
-            self.spawn_network_object(data)
     
     def update(self, delta_time):
         """すべてのオブジェクトを更新 & 衝突判定"""

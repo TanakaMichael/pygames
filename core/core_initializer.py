@@ -1,7 +1,6 @@
 from core.game_scene_manager import GameSceneManager
 from core.network.network_manager import NetworkManager
 from core.global_event_manager import GlobalEventManager
-from core.coroutine import CoroutineManager
 from core.game import Game
 
 class CoreInitializer:

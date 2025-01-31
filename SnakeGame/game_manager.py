@@ -28,9 +28,8 @@ class GameManager(GameObject):
     def on_player_leave(self, steam_id):
         """プレイヤーが退出したときの処理"""
         print(f"🚪 プレイヤー {steam_id} が退出")
-
+        self.scene = GameSceneManager.get_instance().current_scene
         # **対応するオブジェクトを削除**
-        for obj in self.objects:
-            if obj.network_id == steam_id:
-                self.network_manager.remove_object(obj)
-                break
+        obj = self.scene.get_object_by_steam_id(steam_id)
+        if(obj is not None):
+            self.network_manager.remove_object(obj)

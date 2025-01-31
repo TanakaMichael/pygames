@@ -15,6 +15,7 @@ class NetworkGameObject(GameObject):
         self.network_manager = NetworkManager.get_instance()
         self.network_manager.add_network_object(self)  # **登録**
 
+
         if self.network_manager.local_steam_id == steam_id:
             self.is_local_player = True
 

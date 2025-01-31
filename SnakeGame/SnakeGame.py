@@ -1,8 +1,5 @@
 import pygame
 from core.core_initializer import CoreInitializer
-from core.game_scene import GameScene
-from .snake import Snake
-from .food_manager import FoodManager
 from .snake_game_scene import SnakeGameScene
 
 class SnakeGame:
@@ -25,9 +22,10 @@ class SnakeGame:
 
     def setup_scenes(self):
         """ゲームシーンをセットアップ"""
-        main_scene = SnakeGameScene("MainScene", self.screen)
-        self.scene_manager.add_scene(main_scene)
-        self.scene_manager.set_active_scene("MainScene")
+        if self.network_manager.is_server:
+            main_scene = SnakeGameScene("MainScene", self.screen)
+            self.scene_manager.add_scene(main_scene)
+            self.scene_manager.set_active_scene("MainScene")
     def run(self):
         """メインループ"""
         while self.running:

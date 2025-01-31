@@ -6,7 +6,6 @@ from steamworks import STEAMWORKS
 import SteamNetworking as sn
 from core.global_event_manager import GlobalEventManager
 from core.coroutine import CoroutineManager, WaitForSeconds
-from core.game_scene_manager import GameSceneManager
 from core.global_singleton import Global
 class NetworkManager(Global):
     """サーバーとクライアントの管理 + 退出・シャットダウン機能追加"""
@@ -19,14 +18,16 @@ class NetworkManager(Global):
         self.server_id = None
         self.lobby_id = None
         self.running = True  # **メインループ制御**
-
-        steamworks = STEAMWORKS()
+        self.connected = False  # **接続状態**
+        self.last_ping_time = time.time()  # **最後に PING を受けた時間**
         self.global_event_manager = GlobalEventManager.get_instance()
-        self.scene_manager = GameSceneManager.get_instance()
+        self.scene_manager = None
     def initialize(self, is_server=False):
         """サーバーの開始 or クライアントの参加"""
         self.is_server = is_server  # **サーバーかクライアントか**
         self.is_local_client = not is_server  # **ローカルクライアント**
+        from core.game_scene_manager import GameSceneManager
+        self.scene_manager = GameSceneManager.get_instance()
 
         if self.is_server:
             self.start_server()
@@ -61,8 +62,8 @@ class NetworkManager(Global):
         lobbies = sn.get_friend_lobbies_richpresence()
         if len(lobbies) > 0:
             self.lobby_id = lobbies[0]
-            sn.join_lobby(lobby_id)
-            sn.set_lobby_rich_presence(lobby_id)
+            sn.join_lobby(self.lobby_id)
+            sn.set_lobby_rich_presence(self.lobby_id)
         else:
             print("❌ 参加できるロビーがありません")
             exit()
@@ -90,6 +91,43 @@ class NetworkManager(Global):
             threading.Thread(target=self.monitor_players, daemon=True).start()
 
         threading.Thread(target=self.receive_messages, daemon=True).start()
+        # **接続が完了するまで待機**
+        threading.Thread(target=self.wait_for_ping, daemon=True).start()
+    def wait_for_ping(self):
+        """サーバーから最初の PING を受け取るまで待機"""
+        print("⏳ サーバーからの PING を待機中...")
+        if self.is_server:
+            return
+        while not self.connected:
+            buffer = ctypes.create_string_buffer(512)
+            sender_steam_id = ctypes.c_uint64()
+
+            if sn.receive_p2p_message(buffer, 512, ctypes.byref(sender_steam_id)):
+                try:
+                    data = json.loads(buffer.value.decode())
+
+                    if data["message"] == "PING":
+                        self.last_ping_time = time.time()
+                        self.connected = True
+                        self.running = True
+                        print("✅ サーバーとの接続が確立しました！")
+
+                        # **サーバーに現在のシーンのオブジェクトをリクエスト**
+                        if self.is_local_client:
+                            self.request_scene()
+
+                except json.JSONDecodeError:
+                    continue
+
+            if time.time() - self.last_ping_time > 5:
+                print("❌ サーバーが応答しません。接続失敗。")
+                exit()
+
+            time.sleep(0.1)
+    def request_scene(self):
+        """クライアントがサーバーに現在のシーンをリクエスト"""
+        print("📡 現在のシーンのオブジェクトをリクエスト中...")
+        self.scene_manager.sync_scene_with_server()
 
     def get_clients(self):
         """現在のロビーにいるクライアントのリストを取得"""
@@ -150,7 +188,35 @@ class NetworkManager(Global):
                 self.remove_network_object(obj)
                 return True
         return False
+    def set_active_scene(self, scene_name):
+        """アクティブなシーンを設定し、クライアントと同期"""
+        if self.scene_manager.current_scene and self.scene_manager.current_scene.name == scene_name:
+            print(f"🔄 シーン `{scene_name}` はすでにアクティブです")
+            return
 
+        # **シーン変更**
+        self.scene_manager.set_active_scene(scene_name)
+        self.current_scene_id = self.scene_manager.current_scene.network_id
+
+        # **クライアントにシーン変更を通知 (サーバーのみ)**
+        if self.is_server:
+            self.broadcast_scene_change(scene_name)
+
+    def broadcast_scene_change(self, scene_name):
+        """シーン変更を全クライアントに送信"""
+        scene_change_data = {
+            "type": "scene_change",
+            "scene_name": scene_name,
+            "scene_id": self.current_scene_id
+        }
+        self.broadcast(scene_change_data)
+    def apply_scene_change(self, data):
+        """クライアントが受信したシーン変更を適用"""
+        scene_name = data["scene_name"]
+        scene_id = data["scene_id"]
+
+        print(f"🌍 シーン `{scene_name}` に変更 (ID: {scene_id})")
+        self.set_active_scene(scene_name)
     def receive_messages(self):
         """受信データを対応する `NetworkGameObject` に渡す"""
         while self.running:
@@ -163,27 +229,15 @@ class NetworkManager(Global):
                     # **PING は無視**
                     if data.get("message") == "PING":
                         continue
-                    
+                    # シーンのhandle_network_dataを呼び出す
+                    self.scene_manager.handle_network_data(data)
+
                     # `network_id` が付属しているかチェック
                     network_id = data.get("network_id")
                     if network_id is None:
                         print("⚠ `network_id` が付属していないデータを無視")
                         continue
-                    # **削除リクエストを処理**
-                    if data.get("type") == "remove_object":
-                        network_id = data.get("network_id")
-                        if network_id in self.network_objects:
-                            obj = self.network_objects[network_id]
-                            print(f"🗑 `{obj.name}` (network_id={network_id}) を削除")
-                            self.remove_network_object(obj)
-                        continue
-                    # **生成リクエストを処理**
-                    if data.get("type") == "spawn_object":
-                        obj = data.get("network_id")
-                        if obj in self.network_objects:
-                            print(f"⚠ `obj={obj}` のオブジェクトは既に存在")
-                            continue
-                        self.spawn_network_object(obj)
+                    
 
                     # 該当のオブジェクトにデータを渡す
                     obj = self.network_objects.get(network_id)

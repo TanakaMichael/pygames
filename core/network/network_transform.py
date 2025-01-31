@@ -5,7 +5,7 @@ class NetworkTransform(Component):
     """ネットワーク同期される Transform コンポーネント"""
     def __init__(self, game_object, sync_interval=0.05):
         super().__init__(game_object)
-        self.network_manager = NetworkManager.instance
+        self.network_manager = NetworkManager.get_instance()
         self.network_id = game_object.network_id  # **オブジェクトの Network ID**
         self.sync_interval = sync_interval  # **同期間隔 (秒)**
         self.time_since_last_sync = 0  # **前回の同期時間**
