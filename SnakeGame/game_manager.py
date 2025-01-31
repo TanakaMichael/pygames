@@ -2,6 +2,7 @@ from core.game_object import GameObject
 from core.global_event_manager import GlobalEventManager
 from core.game_scene_manager import GameSceneManager
 from core.network.network_game_object import NetworkGameObject
+from core.game_scene_manager import GameSceneManager
 from SnakeGame.snake import Snake
 from core.network.network_manager import NetworkManager
 
@@ -11,6 +12,7 @@ class GameManager(GameObject):
         super().__init__("GameManager")
         self.global_event_manager = GlobalEventManager.get_instance()
         self.network_manager = NetworkManager.get_instance()
+        self.scene = GameSceneManager.get_instance().current_scene
 
         # **プレイヤーの参加・退出イベントをリスン**
         if self.network_manager.is_server:
@@ -23,7 +25,7 @@ class GameManager(GameObject):
 
         # **新しいネットワークオブジェクトを作成**
         self.scene = GameSceneManager.get_instance().current_scene
-        self.scene.spawn_object(Snake(f"Player_{steam_id}", steam_id=steam_id))
+        self.scene.spawn_object(Snake(name=f"Player_{steam_id}", steam_id=steam_id))
 
     def on_player_leave(self, steam_id):
         """プレイヤーが退出したときの処理"""
@@ -32,4 +34,4 @@ class GameManager(GameObject):
         # **対応するオブジェクトを削除**
         obj = self.scene.get_object_by_steam_id(steam_id)
         if(obj is not None):
-            self.network_manager.remove_object(obj)
+            self.network_manager.remove_network_object(obj)

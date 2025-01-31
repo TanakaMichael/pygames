@@ -106,7 +106,7 @@ class NetworkManager(Global):
                 try:
                     data = json.loads(buffer.value.decode())
 
-                    if data["message"] == "PING":
+                    if data["type"] == "PING":
                         self.last_ping_time = time.time()
                         self.connected = True
                         self.running = True
@@ -142,7 +142,7 @@ class NetworkManager(Global):
         while self.running and self.is_server:
             for player_id in self.get_clients():
                 if player_id and player_id != self.server_id:
-                    sn.send_p2p_message(player_id, json.dumps({"message": "PING"}).encode())
+                    sn.send_p2p_message(player_id, json.dumps({"type": "PING"}).encode())
             time.sleep(1)
 
     def accept_p2p_sessions(self):
@@ -228,7 +228,7 @@ class NetworkManager(Global):
                 try:
                     data = json.loads(buffer.value.decode())
                     # **PING は無視**
-                    if data.get("message") == "PING":
+                    if data.get("type") == "PING":
                         continue
                     # シーンのhandle_network_dataを呼び出す
                     self.scene_manager.handle_network_data(data)
