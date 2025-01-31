@@ -2,7 +2,6 @@ import time
 import ctypes
 import json
 import threading
-from steamworks import STEAMWORKS
 import SteamNetworking as sn
 from core.global_event_manager import GlobalEventManager
 from core.coroutine import CoroutineManager, WaitForSeconds
@@ -92,7 +91,8 @@ class NetworkManager(Global):
 
         threading.Thread(target=self.receive_messages, daemon=True).start()
         # **接続が完了するまで待機**
-        threading.Thread(target=self.wait_for_ping, daemon=True).start()
+        if self.is_local_client:
+            threading.Thread(target=self.wait_for_ping, daemon=True).start()
     def wait_for_ping(self):
         """サーバーから最初の PING を受け取るまで待機"""
         print("⏳ サーバーからの PING を待機中...")
@@ -115,12 +115,13 @@ class NetworkManager(Global):
                         # **サーバーに現在のシーンのオブジェクトをリクエスト**
                         if self.is_local_client:
                             self.request_scene()
+                            break
 
                 except json.JSONDecodeError:
                     continue
 
-            if time.time() - self.last_ping_time > 5:
-                print("❌ サーバーが応答しません。接続失敗。")
+            if time.time() - self.last_ping_time > 20:
+                print("❌ サーバーが応答しません。接続失敗!")
                 exit()
 
             time.sleep(0.1)

@@ -63,7 +63,6 @@ class GameScene:
         self.camera.update(delta_time)
         self.canvas.update(delta_time)
         for obj in self.objects:
-            print(f"🧐 {obj} の型: {type(obj)}")  # **デバッグ出力**
 
             if hasattr(obj, "update"):
                 obj.update(delta_time)  # **obj が `update()` を持っている場合のみ呼び出す**

@@ -1,6 +1,6 @@
 from core.component.component import Component
 from core.network.network_manager import NetworkManager
-
+import pygame
 class NetworkTransform(Component):
     """ネットワーク同期される Transform コンポーネント"""
     def __init__(self, game_object, sync_interval=0.05):
@@ -22,12 +22,19 @@ class NetworkTransform(Component):
         """サーバーが Transform をクライアントに送信"""
         transform_data = {
             "network_id": self.network_id,
-            "position": self.game_object.transform.position,
-            "rotation": self.game_object.transform.rotation
+            "position_x": self.game_object.transform.position.x,
+            "position_y": self.game_object.transform.position.y,
+            "scale_x": self.game_object.transform.scale.x,
+            "scale_y": self.game_object.transform.scale.y,
+            "rotation_x": self.game_object.transform.rotation.x,
+            "rotation_y": self.game_object.transform.rotation.y,
+            "rotation_z": self.game_object.transform.rotation.z,
+            "type": "transform_update"
         }
         self.network_manager.broadcast(transform_data)
     def handle_network_data(self, data):
         """受信データが Transform 更新かチェックして適用"""
         if data.get("type") == "transform_update" and data.get("network_id") == self.network_id:
-            self.game_object.transform.position = data["position"]
-            self.game_object.transform.rotation = data["rotation"]
+            self.game_object.transform.position = pygame.Vector2(data["position_x"], data["position_y"])
+            self.game_object.transform.scale = pygame.Vector2(data["scale_x"], data["scale_y"])
+            self.game_object.transform.rotation = pygame.Vector3(data["rotation_x"], data["rotation_y"], data["rotation_z"])
