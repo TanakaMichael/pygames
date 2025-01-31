@@ -5,7 +5,7 @@ from steamworks import STEAMWORKS
 from steamworks.exceptions import SteamNotRunningException
 steamworks = STEAMWORKS()
 try:
-    steamworks.initialize()
+    steamworks.initialize() # 何かしらのエラーが発生した場合は終了
 except OSError:
     exit()
 except SteamNotRunningException:

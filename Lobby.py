@@ -41,14 +41,14 @@ def send_ping():
                 ping_message = json.dumps({"message": "PING"})
                 sn.send_p2p_message(player_id, ping_message.encode())
 
-        time.sleep(2)  # **2秒ごとに PING を送信**
+        time.sleep(1)  # **2秒ごとに PING を送信**
 # **P2P セッションを確立**
 def accept_p2p_sessions():
     while True:
         for player_id in get_clients():
             if player_id and player_id != server_id:
                 sn.accept_p2p_session(player_id)
-        time.sleep(1)
+        time.sleep(0.1)
 
 import threading
 session_thread = threading.Thread(target=accept_p2p_sessions, daemon=True)
