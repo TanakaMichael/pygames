@@ -27,6 +27,7 @@ class NetworkManager(Global):
         self.missing_object_requests = {}
         # 再送信するまでのタイムアウト（秒）
         self.request_timeout = 5
+        self.ping_rate = 0
 
         # NetworkIDの初期化
         self.last_network_id = 0
@@ -179,7 +180,7 @@ class NetworkManager(Global):
             for player_id in self.get_clients():
                 if player_id and player_id != self.server_id:
                     sn.accept_p2p_session(player_id)
-            time.sleep(0.1)
+            time.sleep(1)
 
     def add_network_object(self, obj):
         """ネットワークオブジェクトを登録"""
@@ -251,6 +252,11 @@ class NetworkManager(Global):
         再構築済みまたは断片化されていない受信メッセージを処理する。
         """
         if message.get("type") == "PING":
+            # ピングを特定する
+            current_time = time.time()
+            if self.last_ping_time is not None:
+                self.ping_rate = current_time - self.last_ping_time
+            self.last_ping_time = current_time
             return
 
         # シーン側の処理へ流す
@@ -360,6 +366,11 @@ class NetworkManager(Global):
             joined_lobby_id = ctypes.c_uint64()
             if sn.check_lobby_join(ctypes.byref(joined_steam_id), ctypes.byref(joined_lobby_id)):
                 steam_id = joined_steam_id.value
+                # 重複チェック
+                clients = self.get_clients()
+                if steam_id in clients:
+                    print(f"参加したユーザーはすでに存在します。: {steam_id}")
+                    continue
                 self.global_event_manager.trigger_event("on_player_join", steam_id=steam_id)
 
             # **退出チェック**

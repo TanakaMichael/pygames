@@ -3,6 +3,7 @@ from SnakeGame.food_manager import FoodManager
 from SnakeGame.game_manager import GameManager
 from SnakeGame.snake import Snake
 from core.network.network_game_scene import NetworkGameScene
+from SnakeGame.ping_ui import PingUI
 class SnakeGameScene(NetworkGameScene):
     def __init__(self, name, screen):
         super().__init__(name, screen)
@@ -12,6 +13,8 @@ class SnakeGameScene(NetworkGameScene):
             self.add_object(Snake(name=f"Player_{self.network_manager.server_id}", steam_id=self.network_manager.server_id))
         self.add_object(FoodManager())
         self.add_object(GameManager())
+
+        self.add_object(PingUI(canvas=self.canvas))
 
     def update(self, delta_time):
         super().update(delta_time)

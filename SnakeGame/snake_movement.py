@@ -52,5 +52,6 @@ class SnakeMovement(Component):
     def update(self, delta_time):
         """スネークを現在の方向に移動"""
         super().update(delta_time)
-        move_amount = self.direction * self.speed * delta_time
-        self.rigidbody.apply_velocity(move_amount)
+        if self.network_manager.is_server:
+            move_amount = self.direction * self.speed * delta_time
+            self.rigidbody.apply_velocity(move_amount)

@@ -37,6 +37,7 @@ class GameScene:
             if isinstance(obj, NetworkGameObject) and obj.steam_id == steam_id:
                 return obj
         return
+    
     def get_object_by_network_id(self, network_id):
         """network_id を指定して GameObject を取得"""
         for obj in self.objects:
@@ -54,6 +55,9 @@ class GameScene:
     def add_object(self, game_object):
         """シーンに GameObject を追加"""
         self.objects.append(game_object)
+    def add_ui(self, ui):
+        """UI_Elementを追加します"""
+        self.canvas.add_element(ui)
     def remove_object(self, game_object):
         """シーンから GameObject を削除"""
         if game_object in self.objects:

@@ -1,28 +1,36 @@
+# ファイル: core/ui/ui_element.py
+import pygame
+from core.UI.rect_transform import RectTransform
+
 class UIElement:
     """すべての UI コンポーネントの基底クラス"""
-    def __init__(self, canvas, anchor=(0.5, 0.5), size=(100, 50), position_mode="anchor", color=(255, 255, 255), layer=0, visible=True):
+    def __init__(self, canvas, name="ui", rect_transform=None, position_mode="anchor", color=pygame.Color(255,255,255), layer=0, visible=True):
+        """
+        :param canvas: この UI 要素を管理する Canvas
+        :param rect_transform: RectTransform インスタンス（省略時はデフォルト値）
+        :param position_mode: "anchor" または "absolute" で座標計算モードを選択
+        :param color: UI 要素の背景色（例として矩形描画）
+        :param layer: 描画レイヤー（数値が小さいほど下位レイヤー）
+        :param visible: 表示フラグ
+        """
         self.canvas = canvas
-        self.anchor = anchor  # (0.0 - 1.0) で画面のどこに配置するか決める
-        self.size = size
-        self.position_mode = position_mode  # "anchor" または "absolute"
+        self.rect_transform = rect_transform if rect_transform is not None else RectTransform()
+        self.position_mode = position_mode
         self.color = color
-        self.layer = layer  # **レイヤー**
+        self.layer = layer
         self.visible = visible
-
-        self.canvas.add_element(self)  # **Canvas に追加 (自動でソートされる)**
+        self.name = name
 
     def get_position(self):
-        """カメラのサイズに基づいて UI の描画位置を計算"""
-        screen_width, screen_height = self.canvas.get_canvas_size()
-        if self.position_mode == "anchor":
-            return (int(self.anchor[0] * screen_width - self.size[0] / 2),
-                    int(self.anchor[1] * screen_height - self.size[1] / 2))
-        return self.anchor  # absolute モードではそのまま座標を返す
+        """Canvas のサイズに基づいて UI の描画位置を計算する"""
+        canvas_size = self.canvas.get_canvas_size()
+        return self.rect_transform.get_calculated_position(canvas_size, self.position_mode)
 
     def update(self, delta_time):
-        """更新処理 (オーバーライド用)"""
+        """更新処理 (必要に応じてオーバーライド)"""
         pass
 
     def render(self, screen):
-        """描画処理 (オーバーライド用)"""
-        pass
+        """描画処理 (例として矩形を描画)"""
+        if not self.visible:
+            return

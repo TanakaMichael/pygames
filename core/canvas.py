@@ -8,7 +8,12 @@ class Canvas:
     def add_element(self, element):
         """UI 要素を追加し、レイヤー順にソート"""
         self.ui_elements.append(element)
-        self.ui_elements.sort(key=lambda e: e.layer)  # **レイヤー順にソート**
+        self.ui_elements.sort(key=lambda e: e.layer)  # レイヤー順にソート
+        
+    def remove_element(self, element):
+        """UI 要素を削除"""
+        if element in self.ui_elements:
+            self.ui_elements.remove(element)
 
     def update(self, delta_time):
         """UI の更新処理"""
