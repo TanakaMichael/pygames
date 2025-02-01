@@ -101,38 +101,54 @@ class NetworkManager(Global):
     def start_threads(self):
         """必要なスレッドを開始"""
         if self.is_server:
-            threading.Thread(target=self.send_ping, daemon=True).start()
+            # サーバー側は受信処理のみ（PINGのエコー応答を行う）
             threading.Thread(target=self.accept_p2p_sessions, daemon=True).start()
             threading.Thread(target=self.monitor_players, daemon=True).start()
+        else:
+            # クライアント側は定期的に PING_REQUEST を送信する
+            threading.Thread(target=self.send_ping_request, daemon=True).start()
 
         threading.Thread(target=self.receive_messages, daemon=True).start()
-        # **接続が完了するまで待機**
+
+        # 接続待機（クライアント側のみ）
         if self.is_local_client:
             threading.Thread(target=self.wait_for_ping, daemon=True).start()
+    def send_ping_request(self):
+        """クライアント側が定期的にサーバーへ PING_REQUEST を送信する"""
+        while self.running and self.is_local_client:
+            ping_request = {
+                "type": "PING_REQUEST",
+                "time": time.perf_counter(),
+                "sender_id": self.local_steam_id
+            }
+            self.send_to_server(ping_request)
+            time.sleep(1)
     def wait_for_ping(self):
-        """サーバーから最初の PING を受け取るまで待機"""
-        print("⏳ サーバーからの PING を待機中...")
+        """サーバーから最初の PING_RESPONSE を受け取るまで待機"""
+        print("⏳ サーバーからの PING_RESPONSE を待機中...")
         if self.is_server:
             return
+        # 待機開始前に last_ping_time をリセット
+        self.last_ping_time = time.perf_counter()
         while not self.connected:
             buffer = ctypes.create_string_buffer(2048)
             sender_steam_id = ctypes.c_uint64()
 
-            if sn.receive_p2p_message(buffer,2048 , ctypes.byref(sender_steam_id)):
+            if sn.receive_p2p_message(buffer, 2048, ctypes.byref(sender_steam_id)):
                 try:
-                    data = json.loads(buffer.value.decode())
-
-                    if data["type"] == "PING":
-                        self.last_ping_time = time.perf_counter() 
+                    data = json.loads(buffer.value.decode('utf-8'))
+                    # サーバーからのエコー応答(PING_RESPONSE)を確認
+                    if data.get("type") == "PING_RESPONSE":
+                        self.last_ping_time = time.perf_counter()
                         self.connected = True
                         self.running = True
                         print("✅ サーバーとの接続が確立しました！")
 
-                        # **サーバーに現在のシーンのオブジェクトをリクエスト**
+                        # サーバーにシーンオブジェクトのリクエストを送信し、欠損オブジェクトチェックも開始
                         if self.is_local_client:
                             self.request_scene()
                             threading.Thread(target=self.check_missing_requests, daemon=True).start()
-                            break
+                        break
 
                 except json.JSONDecodeError:
                     continue
@@ -141,7 +157,7 @@ class NetworkManager(Global):
                 print("❌ サーバーが応答しません。接続失敗!")
                 exit()
 
-            time.sleep(0.1)
+        time.sleep(0.1)
     def check_missing_requests(self):
         """
         欠損オブジェクトリクエストの状態を定期的にチェックし、
@@ -251,29 +267,41 @@ class NetworkManager(Global):
         self.set_active_scene(scene_name)
     def process_ping(self, message):
         """
-        ping メッセージの処理例。メッセージには送信時刻が含まれているものとする。
-        送信側では high resolution clock（time.perf_counter()）で取得した値をセットして送信する前提。
+        クライアント側が PING_RESPONSE を受信した際の処理。
+        送信時刻との差分から RTT を計算し、片道遅延（RTT/2）を EMA で平滑化する。
         """
-        if message.get("type") == "PING":
-            current_time = time.perf_counter()
-            sent_time = message.get("time")
-            if sent_time is not None:
-                measured_ping = current_time - sent_time
-                # 初回の場合はそのまま設定し、以降はEMAで平滑化する
-                if self.ping_rate == 0.0:
-                    self.ping_rate = measured_ping
-                else:
-                    self.ping_rate = self.ema_alpha * measured_ping + (1 - self.ema_alpha) * self.ping_rate
-                # ログ出力（デバッグ用）
-                print(f"DEBUG: measured_ping = {measured_ping:.3f}, smoothed ping_rate = {self.ping_rate:.3f}")
-            self.last_ping_time = current_time
+        if message.get("type") != "PING_RESPONSE":
             return
+        current_time = time.perf_counter()
+        sent_time = message.get("time")
+        if sent_time is not None:
+            rtt = current_time - sent_time
+            estimated_ping = rtt / 2.0
+            if self.ping_rate == 0.0:
+                self.ping_rate = estimated_ping
+            else:
+                self.ping_rate = self.ema_alpha * estimated_ping + (1 - self.ema_alpha) * self.ping_rate
+            print(f"DEBUG: RTT = {rtt:.3f}, estimated ping = {estimated_ping:.3f}, smoothed ping_rate = {self.ping_rate:.3f}")
+        self.last_ping_time = current_time
+
     def process_received_message(self, message):
         """
         再構築済みまたは断片化されていない受信メッセージを処理する。
         """
-        if message.get("type") == "PING":
-            # ピングを特定する
+        msg_type = message.get("type")
+        if msg_type == "PING_REQUEST":
+            # サーバー側は PING_REQUEST を受信したらエコーして PING_RESPONSE を返す
+            if self.is_server:
+                response = {
+                    "type": "PING_RESPONSE",
+                    "time": message.get("time"),  # 送信側の時刻をそのまま返す
+                    "sender_id": self.local_steam_id
+                }
+                self.send_to_client(message.get("sender_id"), response)
+            return
+
+        if msg_type == "PING_RESPONSE":
+            # クライアント側が受信した PING_RESPONSE を処理する
             self.process_ping(message)
             return
 
