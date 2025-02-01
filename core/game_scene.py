@@ -37,6 +37,10 @@ class GameScene:
             if isinstance(obj, NetworkGameObject) and obj.steam_id == steam_id:
                 return obj
         return
+    def get_objects_by_steam_id(self, steam_id):
+        """network_id を指定して GameObject のリストを返す"""
+        return [obj for obj in self.objects if isinstance(obj, NetworkGameObject) and obj.steam_id == steam_id]
+        
     def get_all_network_objects(self):
         """現在のシーン内の `NetworkGameObject` をすべて取得"""
         return [obj for obj in self.objects if isinstance(obj, NetworkGameObject)]

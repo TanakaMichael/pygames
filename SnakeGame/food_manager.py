@@ -8,10 +8,11 @@ import pygame
 class FoodManager(NetworkGameObject):
     """フード (エサ) を管理"""
 
-    def __init__(self):
-        super().__init__("FoodManager")
+    def __init__(self, steam_id=-1, network_id=None):
+        super().__init__("FoodManager", steam_id=steam_id, network_id=network_id)
         if NetworkManager.get_instance().is_server:
             self.spawn_food()
+            self.network_manager.add_network_object(self)
 
     def spawn_food(self):
         """ランダムな位置にフードを生成"""

@@ -11,8 +11,8 @@ import pygame
 
 class Snake(NetworkGameObject):
     """プレイヤーのスネーク"""
-    def __init__(self, steam_id=-1, network_id=-1, name=f"Snake"):
-        super().__init__(name=name, steam_id=steam_id)
+    def __init__(self, steam_id=-1, network_id=None, name=f"Snake"):
+        super().__init__(name=name, steam_id=steam_id, network_id=network_id)
         # **スプライトの設定**
         self.transform = self.add_component(Transform, position=pygame.Vector2(500, 500))
         self.network_transform = self.add_component(NetworkTransform)

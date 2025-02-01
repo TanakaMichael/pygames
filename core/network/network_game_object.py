@@ -5,23 +5,28 @@ class NetworkGameObject(GameObject):
     """ネットワーク上で同期されるオブジェクト"""
     network_id_counter = 1  # **ID 管理**
 
-    def __init__(self, name="NetworkGameObject", steam_id=-1):
+    def __init__(self, name="NetworkGameObject", steam_id=-1, network_id=None):
         super().__init__(name)
-        self.network_id = NetworkGameObject.network_id_counter
         self.steam_id = steam_id  # **所有者**
-        NetworkGameObject.network_id_counter += 1
         self.is_networked = True
         self.is_local_player = False
         self.network_manager = NetworkManager.get_instance()
         self.network_manager.add_network_object(self)  # **登録**
-
+        self.set_network_id(network_id)
+    
 
         if self.network_manager.local_steam_id == steam_id:
+            NetworkGameObject.network_id_counter += 1
             self.is_local_player = True
 
         # **サーバーなら全クライアントにスポーン通知**
         if self.network_manager.is_server:
             self.broadcast_spawn()
+    def set_network_id(self, network_id):
+        if network_id:
+            self.network_id = network_id
+        else:
+            self.network_id = NetworkGameObject.network_id_counter
 
     def broadcast_spawn(self):
         """サーバーがクライアントにスポーン通知を送る"""

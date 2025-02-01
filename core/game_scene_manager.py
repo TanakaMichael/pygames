@@ -1,6 +1,7 @@
 from core.global_singleton import Global
 from core.network.network_object_factory import NetworkObjectFactory
 from core.network.network_manager import NetworkManager
+import threading
 class GameSceneManager(Global):
     """シーン管理と、シーン内のオブジェクト管理"""
     def __init__(self):
@@ -10,6 +11,8 @@ class GameSceneManager(Global):
         self.scenes = {}  # シーンリスト
         self.current_scene = None  # 現在のシーン
         self.network_manager = NetworkManager.get_instance()
+        # シーン同期のリトライタイムアウト（秒）
+        self.scene_sync_timeout = 5
 
     def add_scene(self, scene):
         """シーンを登録"""
@@ -46,10 +49,22 @@ class GameSceneManager(Global):
         """クライアントがサーバーにシーン同期をリクエスト"""
         if self.network_manager.is_local_client:
             print("📡 シーン同期リクエストをサーバーに送信")
+            self.network_manager.complete_scene_sync = False # シーンの更新が完了するまで False
             self.network_manager.send_to_server({
                 "type": "request_scene_sync", 
                 "sender_id": self.network_manager.local_steam_id
             })
+            # タイマーをセットして、一定時間後に同期完了していなければ再リクエスト
+            timer = threading.Timer(self.scene_sync_timeout, self.check_scene_sync_timeout)
+            timer.start()
+    def check_scene_sync_timeout(self):
+        """
+        シーン同期のリトライチェック
+        一定時間たっても complete_scene_sync が False の場合、再度同期リクエストを送信する
+        """
+        if not self.network_manager.complete_scene_sync:
+            print("⚠ シーン同期タイムアウト。再度シーン同期リクエストを送信します。")
+            self.sync_scene_with_server()
 
     def handle_network_data(self, data):
         """ネットワークデータを受信し、適切な処理を実行"""
@@ -124,7 +139,6 @@ class GameSceneManager(Global):
         print("🔄 シーンを再構築...")
         if not self.set_active_scene_by_id(scene_id):
             return
-        self.network_manager.complete_scene_sync = False
         self.current_scene.objects.clear()  # **現在のオブジェクトを削除**
 
         for obj_data in scene_data["objects"]:

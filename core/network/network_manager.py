@@ -13,7 +13,6 @@ class NetworkManager(Global):
         if NetworkManager._instance is not None:
             raise Exception("NetworkManager is not initialized!")
         super().__init__()
-        self.network_id_map = {}  # **{ steam_id: network_id }**
         self.network_objects = {}  # **ネットワーク同期するオブジェクト**
         self.server_id = None
         self.lobby_id = None

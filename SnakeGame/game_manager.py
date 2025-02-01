@@ -22,6 +22,7 @@ class GameManager(GameObject):
     def on_player_join(self, steam_id):
         """プレイヤーが参加したときの処理"""
         print(f"🎮 プレイヤー {steam_id} が参加")
+        print(f"現在サーバーにいるユーザーは: {self.network_manager.get_clients()}")
 
         # **新しいネットワークオブジェクトを作成**
         self.scene = GameSceneManager.get_instance().current_scene
@@ -31,10 +32,10 @@ class GameManager(GameObject):
         """プレイヤーが退出したときの処理"""
         print(f"🚪 プレイヤー {steam_id} が退出")
         self.scene = GameSceneManager.get_instance().current_scene
-        # **対応するオブジェクトを削除**
-        obj = self.scene.get_object_by_steam_id(steam_id)
-        if obj is not None:
-            print(f"obj: {obj.steam_id}のオブジェクトを削除します")
-        if(obj is not None):
+        # **対応するオブジェクトスを削除**ス
+        objs = self.scene.get_objects_by_steam_id(steam_id)
+
+        for obj in objs:
+            print(f"obj: {objs}のオブジェクトを削除します")
             self.network_manager.remove_network_object(obj)
             self.scene.remove_object(obj)
