@@ -171,7 +171,7 @@ class NetworkManager(Global):
         while self.running and self.is_server:
             for player_id in self.get_clients():
                 if player_id and player_id != self.server_id:
-                    sn.send_p2p_message(player_id, json.dumps({"type": "PING", "time": time.time()}).encode())
+                    sn.send_p2p_message(player_id, json.dumps({"type": "PING", "time": time.perf_counter()}).encode())
             time.sleep(1)
 
     def accept_p2p_sessions(self):
@@ -247,17 +247,32 @@ class NetworkManager(Global):
 
         print(f"🌍 シーン `{scene_name}` に変更 (ID: {scene_id})")
         self.set_active_scene(scene_name)
+    def process_ping(self, message):
+        """
+        ping メッセージの処理例。メッセージには送信時刻が含まれているものとする。
+        送信側では high resolution clock（time.perf_counter()）で取得した値をセットして送信する前提。
+        """
+        if message.get("type") == "PING":
+            current_time = time.perf_counter()
+            sent_time = message.get("time")
+            if sent_time is not None:
+                measured_ping = current_time - sent_time
+                # 初回の場合はそのまま設定し、以降はEMAで平滑化する
+                if self.ping_rate == 0.0:
+                    self.ping_rate = measured_ping
+                else:
+                    self.ping_rate = self.ema_alpha * measured_ping + (1 - self.ema_alpha) * self.ping_rate
+                # ログ出力（デバッグ用）
+                print(f"DEBUG: measured_ping = {measured_ping:.3f}, smoothed ping_rate = {self.ping_rate:.3f}")
+            self.last_ping_time = current_time
+            return
     def process_received_message(self, message):
         """
         再構築済みまたは断片化されていない受信メッセージを処理する。
         """
         if message.get("type") == "PING":
             # ピングを特定する
-            current_time = time.time()
-            sent_time = message.get("time")
-            if sent_time is not None:
-                self.ping_rate = current_time - sent_time
-            self.last_ping_time = current_time
+            self.process_ping(message)
             return
 
         # シーン側の処理へ流す
