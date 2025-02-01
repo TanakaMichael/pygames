@@ -9,7 +9,7 @@ class NetworkTransform(NetworkComponent):
 
     def update(self, delta_time):
         """サーバーなら Transform をブロードキャスト"""
-        super().update()
+        super().update(delta_time)
 
     def broadcast_transform(self):
         """サーバーが Transform をクライアントに送信"""
