@@ -171,7 +171,7 @@ class NetworkManager(Global):
         while self.running and self.is_server:
             for player_id in self.get_clients():
                 if player_id and player_id != self.server_id:
-                    sn.send_p2p_message(player_id, json.dumps({"type": "PING"}).encode())
+                    sn.send_p2p_message(player_id, json.dumps({"type": "PING", "time": time.time()}).encode())
             time.sleep(1)
 
     def accept_p2p_sessions(self):
@@ -254,8 +254,9 @@ class NetworkManager(Global):
         if message.get("type") == "PING":
             # ピングを特定する
             current_time = time.time()
-            if self.last_ping_time is not None:
-                self.ping_rate = current_time - self.last_ping_time
+            sent_time = message.get("time")
+            if sent_time is not None:
+                self.ping_rate = current_time - sent_time
             self.last_ping_time = current_time
             return
 
