@@ -141,10 +141,6 @@ class GameSceneManager(Global):
         print("🔄 シーンを再構築...")
         if not self.set_active_scene_by_id(scene_id):
             return
-        if self.get_current_scene_id() == scene_id:
-            print("すでに同期済みです。この問題は、再度のシーン要請によって生じる重複動作です")  # 同じシーンなら何もしない
-            self.network_manager.complete_scene_sync = True
-            return  # 同じシーンなら何もしない
         self.current_scene.objects.clear()  # **現在のオブジェクトを削除**
 
         for obj_data in scene_data["objects"]:
