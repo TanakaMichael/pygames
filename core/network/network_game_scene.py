@@ -89,7 +89,7 @@ class NetworkGameScene(GameScene):
             self.spawn_network_object(data)
         elif data.get("type") == "remove_object":
             self.remove_object_by_network_id(data["network_id"])
-        elif data.get("type") == "request_missing_object" and self.is_server:
+        elif data.get("type") == "request_missing_object" and self.network_manager.is_server:
             network_id = data.get("network_id")
             sender_id = data.get("sender_id")
             print(f"📡 クライアント {sender_id} から network_id {network_id} の再送要求を受信しました")
@@ -101,6 +101,7 @@ class NetworkGameScene(GameScene):
         network_id = data["network_id"]
         class_name = data["class_name"]
         steam_id = data["steam_id"]
+        print(f"�� クライアントから network_id={network_id} の {class_name} を受信しました")
 
         new_object = NetworkObjectFactory.create_object(class_name,  steam_id ,network_id)
         if new_object:
