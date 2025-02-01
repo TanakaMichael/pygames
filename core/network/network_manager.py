@@ -123,7 +123,7 @@ class NetworkManager(Global):
                     data = json.loads(buffer.value.decode())
 
                     if data["type"] == "PING":
-                        self.last_ping_time = time.time()
+                        self.last_ping_time = time.perf_counter() 
                         self.connected = True
                         self.running = True
                         print("✅ サーバーとの接続が確立しました！")
