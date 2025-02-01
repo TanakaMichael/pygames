@@ -11,7 +11,6 @@ import pygame
 
 class Snake(NetworkGameObject):
     """プレイヤーのスネーク"""
-
     def __init__(self, steam_id=-1, network_id=-1, name=f"Snake"):
         super().__init__(name=name, steam_id=steam_id)
         # **スプライトの設定**

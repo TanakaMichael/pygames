@@ -22,24 +22,23 @@ class SnakeGame:
 
     def setup_scenes(self):
         """ゲームシーンをセットアップ"""
-        if self.network_manager.is_server:
-            main_scene = SnakeGameScene("MainScene", self.screen)
-            self.scene_manager.add_scene(main_scene)
-            self.scene_manager.set_active_scene("MainScene")
+        main_scene = SnakeGameScene("MainScene", self.screen)
+        self.scene_manager.add_scene(main_scene)
+        self.scene_manager.set_active_scene("MainScene")
     def run(self):
         """メインループ"""
         while self.running:
             delta_time = self.clock.tick(60) / 1000.0
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.running = False
-                elif event.type == pygame.VIDEORESIZE:
-                    self.screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
-
-            self.screen.fill((0, 0, 0))
-            self.scene_manager.update(delta_time)
-            self.scene_manager.render(self.screen)
-            pygame.display.flip()
+            if self.network_manager.running:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        self.running = False
+                    elif event.type == pygame.VIDEORESIZE:
+                        self.screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+    
+                self.screen.fill((0, 0, 0))
+                self.scene_manager.update(delta_time)
+                self.scene_manager.render(self.screen)
+                pygame.display.flip()
 
         pygame.quit()

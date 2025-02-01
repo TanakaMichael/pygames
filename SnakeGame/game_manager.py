@@ -33,5 +33,8 @@ class GameManager(GameObject):
         self.scene = GameSceneManager.get_instance().current_scene
         # **対応するオブジェクトを削除**
         obj = self.scene.get_object_by_steam_id(steam_id)
+        if obj is not None:
+            print(f"obj: {obj.steam_id}のオブジェクトを削除します")
         if(obj is not None):
             self.network_manager.remove_network_object(obj)
+            self.scene.remove_object(obj)

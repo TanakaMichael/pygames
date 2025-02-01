@@ -61,6 +61,19 @@ class NetworkGameScene(GameScene):
             "class_name": game_object.__class__.__name__,
         }
         self.network_manager.broadcast(spawn_data)
+    
+    def send_missing_object(self, sender_id, network_id):
+        """クライアントがサーバーにオブジェクト再送要求を送信"""
+        obj = self.get_object_by_network_id(network_id)
+        spawn_data = {
+            "type": "spawn_object",
+            "network_id": obj.network_id,
+            "steam_id": obj.steam_id,
+            "class_name": obj.__class__.__name__,
+        }
+        if obj:
+            print(f"📡 クライアント {sender_id} に network_id {network_id} のオブジェクトを再送信")
+            self.network_manager.send_to_client(sender_id, spawn_data)
 
     def broadcast_remove(self, network_id):
         """サーバーがクライアントに削除通知を送信"""
@@ -76,6 +89,12 @@ class NetworkGameScene(GameScene):
             self.spawn_network_object(data)
         elif data.get("type") == "remove_object":
             self.remove_object_by_network_id(data["network_id"])
+        elif data.get("type") == "request_missing_object" and self.is_server:
+            network_id = data.get("network_id")
+            sender_id = data.get("sender_id")
+            print(f"📡 クライアント {sender_id} から network_id {network_id} の再送要求を受信しました")
+            # 該当するオブジェクト情報を取得してクライアントへ送信する処理を実装
+            self.send_missing_object(sender_id, network_id)
 
     def spawn_network_object(self, data):
         """クライアントがサーバーからのオブジェクト生成命令を受け取る"""

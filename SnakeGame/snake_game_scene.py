@@ -2,7 +2,7 @@ from core.game_scene import GameScene
 from SnakeGame.food_manager import FoodManager
 from SnakeGame.game_manager import GameManager
 from SnakeGame.snake import Snake
-from core.network_game_scene import NetworkGameScene
+from core.network.network_game_scene import NetworkGameScene
 class SnakeGameScene(NetworkGameScene):
     def __init__(self, name, screen):
         super().__init__(name, screen)

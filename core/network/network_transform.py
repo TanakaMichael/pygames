@@ -21,6 +21,7 @@ class NetworkTransform(Component):
     def broadcast_transform(self):
         """サーバーが Transform をクライアントに送信"""
         transform_data = {
+            "type": "transform_update", 
             "network_id": self.network_id,
             "position_x": self.game_object.transform.position.x,
             "position_y": self.game_object.transform.position.y,
@@ -29,7 +30,6 @@ class NetworkTransform(Component):
             "rotation_x": self.game_object.transform.rotation.x,
             "rotation_y": self.game_object.transform.rotation.y,
             "rotation_z": self.game_object.transform.rotation.z,
-            "type": "transform_update"
         }
         self.network_manager.broadcast(transform_data)
     def handle_network_data(self, data):
@@ -38,3 +38,4 @@ class NetworkTransform(Component):
             self.game_object.transform.position = pygame.Vector2(data["position_x"], data["position_y"])
             self.game_object.transform.scale = pygame.Vector2(data["scale_x"], data["scale_y"])
             self.game_object.transform.rotation = pygame.Vector3(data["rotation_x"], data["rotation_y"], data["rotation_z"])
+            print(f"📡 `network_id={self.network_id}` の Transform を更新")

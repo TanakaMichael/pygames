@@ -124,7 +124,7 @@ class GameSceneManager(Global):
         print("🔄 シーンを再構築...")
         if not self.set_active_scene_by_id(scene_id):
             return
-
+        self.network_manager.complete_scene_sync = False
         self.current_scene.objects.clear()  # **現在のオブジェクトを削除**
 
         for obj_data in scene_data["objects"]:
@@ -135,3 +135,5 @@ class GameSceneManager(Global):
             )
             if new_obj:
                 self.current_scene.spawn_object(new_obj)
+        print("🔄 シーン再構築完了")
+        self.network_manager.complete_scene_sync = True

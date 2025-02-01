@@ -19,9 +19,15 @@ class NetworkManager(Global):
         self.lobby_id = None
         self.running = True  # **メインループ制御**
         self.connected = False  # **接続状態**
+        self.complete_scene_sync = False  # **シーン同期完了**
         self.last_ping_time = time.time()  # **最後に PING を受けた時間**
         self.global_event_manager = GlobalEventManager.get_instance()
         self.scene_manager = None
+        # 欠損中のネットワークオブジェクトリクエスト用辞書
+        # キー: network_id、値: {"last_request": タイムスタンプ, "attempts": 試行回数}
+        self.missing_object_requests = {}
+        # 再送信するまでのタイムアウト（秒）
+        self.request_timeout = 5
     def initialize(self, is_server=False):
         """サーバーの開始 or クライアントの参加"""
         self.is_server = is_server  # **サーバーかクライアントか**
@@ -116,6 +122,7 @@ class NetworkManager(Global):
                         # **サーバーに現在のシーンのオブジェクトをリクエスト**
                         if self.is_local_client:
                             self.request_scene()
+                            threading.Thread(target=self.check_missing_requests, daemon=True).start()
                             break
 
                 except json.JSONDecodeError:
@@ -126,6 +133,20 @@ class NetworkManager(Global):
                 exit()
 
             time.sleep(0.1)
+    def check_missing_requests(self):
+        """
+        欠損オブジェクトリクエストの状態を定期的にチェックし、
+        タイムアウトを超えている場合は再送信する。
+        """
+        while self.running:
+            current_time = time.time()
+            for network_id, req in list(self.missing_object_requests.items()):
+                if current_time - req["last_request"] >= self.request_timeout:
+                    req["last_request"] = current_time
+                    req["attempts"] += 1
+                    print(f"📡 （チェック）欠損オブジェクト (network_id: {network_id}) の再送要求（試行回数: {req['attempts']}）を送信中...")
+                    self._send_missing_object_request(network_id)
+            time.sleep(1)
     def request_scene(self):
         """クライアントがサーバーに現在のシーンをリクエスト"""
         print("📡 現在のシーンのオブジェクトをリクエスト中...")
@@ -239,7 +260,9 @@ class NetworkManager(Global):
         if obj:
             obj.receive_network_data(message)
         else:
-            print(f"⚠ `network_id={network_id}` のオブジェクトが存在しない")
+            if self.complete_scene_sync: # シーンの同期完了後にオブジェクトが存在しない場合は再送信の要請
+                print(f"⚠ `network_id={network_id}` のオブジェクトが存在しません。欠損オブジェクトリクエストキューに登録します。")
+                self.request_missing_object(network_id)
     def receive_messages(self):
         """受信データを断片化対応で処理する"""
         while self.running:
@@ -284,6 +307,31 @@ class NetworkManager(Global):
         """サーバーがクライアントにデータを送信（断片化対応版）"""
         if self.is_server:
             self.send_message(steam_id, data)
+    def request_missing_object(self, network_id):
+        """
+        クライアントからサーバーへ、欠損しているネットワークオブジェクトの情報を要求する。
+        既にリクエスト済みの場合は再送タイムアウトに基づき再送信を行う。
+        """
+        current_time = time.time()
+        req = self.missing_object_requests.get(network_id)
+        if req is None:
+            # 初回リクエスト：登録して送信
+            self.missing_object_requests[network_id] = {"last_request": current_time, "attempts": 1}
+            self._send_missing_object_request(network_id)
+        else:
+            # 既にリクエスト済み。タイムアウトを超えていたら再送信
+            if current_time - req["last_request"] >= self.request_timeout:
+                req["last_request"] = current_time
+                req["attempts"] += 1
+                print(f"📡 欠損オブジェクト (network_id: {network_id}) の再送要求（試行回数: {req['attempts']}）を送信中...")
+                self._send_missing_object_request(network_id)
+    def _send_missing_object_request(self, network_id):
+        request_data = {
+            "type": "request_missing_object",
+            "network_id": network_id,
+            "sender_id": self.local_steam_id
+        }
+        self.send_to_server(request_data)
 
     def leave_lobby(self):
         """クライアントがロビーから退出"""
