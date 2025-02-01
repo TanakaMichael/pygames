@@ -21,9 +21,3 @@ class NetworkTransform(NetworkComponent):
 
     def __init__(self, game_object, sync_interval=0.05):
         super().__init__(game_object, sync_interval)
-
-    def on_sync_broadcast(self, diff):
-        """Transform の同期データを送信"""
-        diff["type"] = "transform_update"
-        diff["network_id"] = self.network_id
-        self.network_manager.broadcast(diff)

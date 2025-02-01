@@ -313,8 +313,9 @@ class NetworkManager(Global):
         if network_id is None:
             print("⚠ `network_id` が付属していないデータを無視")
             return
-
-        obj = self.network_objects.get(network_id)
+        scene = self.scene_manager.get_current_scene()
+        if scene:
+            obj = scene.get_object_by_network_id(network_id)
         if obj:
             obj.receive_network_data(message)
             if network_id in self.missing_object_requests:
