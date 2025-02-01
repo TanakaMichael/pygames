@@ -19,7 +19,6 @@ class NetworkManager(Global):
         self.running = True  # **メインループ制御**
         self.connected = False  # **接続状態**
         self.complete_scene_sync = False  # **シーン同期完了**
-        self.last_ping_time = time.time()  # **最後に PING を受けた時間**
         self.global_event_manager = GlobalEventManager.get_instance()
         self.scene_manager = None
         # 欠損中のネットワークオブジェクトリクエスト用辞書
@@ -28,6 +27,9 @@ class NetworkManager(Global):
         # 再送信するまでのタイムアウト（秒）
         self.request_timeout = 5
         self.ping_rate = 0
+        # EMA の係数。α の値は 0～1 の間で調整。1 に近いほど最新値を重視
+        self.ema_alpha = 0.2
+        self.last_ping_time = time.perf_counter()  # 高精度タイマーを利用
 
         # NetworkIDの初期化
         self.last_network_id = 0
