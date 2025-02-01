@@ -25,8 +25,7 @@ class NetworkTransform(NetworkComponent):
         """強制的に同期メッセージを送信するメソッド
         ※シーン更新完了時など、全ネットワークコンポーネントの最新状態をクライアントに送信する際に使用
         """
-        self.on_sync_broadcast()
-        self.prev_state = self._get_current_state()
+        super().force_broadcast()
     def handle_network_data(self, data):
         """受信データが Transform 更新かチェックして適用"""
         super().handle_network_data(data)
