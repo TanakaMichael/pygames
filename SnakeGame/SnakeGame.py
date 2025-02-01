@@ -24,7 +24,8 @@ class SnakeGame:
         """ゲームシーンをセットアップ"""
         main_scene = SnakeGameScene("MainScene", self.screen)
         self.scene_manager.add_scene(main_scene)
-        self.scene_manager.set_active_scene("MainScene")
+        if self.network_manager.is_server:
+            self.scene_manager.set_active_scene("MainScene")
     def run(self):
         """メインループ"""
         while self.running:
@@ -35,7 +36,7 @@ class SnakeGame:
                         self.running = False
                     elif event.type == pygame.VIDEORESIZE:
                         self.screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
-    
+
                 self.screen.fill((0, 0, 0))
                 self.scene_manager.update(delta_time)
                 self.scene_manager.render(self.screen)

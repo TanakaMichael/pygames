@@ -11,7 +11,7 @@ class NetworkObjectFactory:
     def create_object(class_name, steam_id, network_id):
         """登録されたクラスからオブジェクトを作成"""
         if class_name in NetworkObjectFactory.registered_classes:
-            return NetworkObjectFactory.registered_classes[class_name](network_id, steam_id)
+            return NetworkObjectFactory.registered_classes[class_name](network_id=network_id, steam_id=steam_id)
         else:
             print(f"⚠ `{class_name}` は未登録")
             return None

@@ -12,11 +12,13 @@ class GameSceneManager(Global):
         self.current_scene = None  # 現在のシーン
         self.network_manager = NetworkManager.get_instance()
         # シーン同期のリトライタイムアウト（秒）
-        self.scene_sync_timeout = 5
+        self.scene_sync_timeout = 10
 
     def add_scene(self, scene):
         """シーンを登録"""
         self.scenes[scene.name] = scene
+    def get_current_scene_id(self):
+        return self.current_scene.network_scene_id if self.current_scene else None
 
     def set_active_scene(self, name):
         """アクティブなシーンを切り替え"""
@@ -139,6 +141,10 @@ class GameSceneManager(Global):
         print("🔄 シーンを再構築...")
         if not self.set_active_scene_by_id(scene_id):
             return
+        if self.get_current_scene_id() == scene_id:
+            print("すでに同期済みです。この問題は、再度のシーン要請によって生じる重複動作です")  # 同じシーンなら何もしない
+            self.network_manager.complete_scene_sync = True
+            return  # 同じシーンなら何もしない
         self.current_scene.objects.clear()  # **現在のオブジェクトを削除**
 
         for obj_data in scene_data["objects"]:
