@@ -63,6 +63,7 @@ class GameSceneManager(Global):
     def check_scene_sync_timeout(self):
         """
         シーン同期のリトライチェック
+
         一定時間たっても complete_scene_sync が False の場合、再度同期リクエストを送信する
         """
         if not self.network_manager.complete_scene_sync:
@@ -77,6 +78,8 @@ class GameSceneManager(Global):
             sender_id = data["sender_id"]
             print(f"📡 クライアント {sender_id} からシーン同期リクエスト")
             self.send_scene_sync(sender_id)
+        elif data.get("type") == "force_broadcast_network_game_objects_components" and self.network_manager.is_server:
+            self.force_broadcast_network_game_objects_components()
         elif data.get("type") == "scene_objects" and not self.network_manager.is_server:
             self.apply_scene_objects(data)
         elif data.get("type") == "request_scene_objects" and self.network_manager.is_server:
@@ -155,5 +158,13 @@ class GameSceneManager(Global):
             )
             if new_obj:
                 self.current_scene.spawn_object(new_obj)
+
         print("🔄 シーン再構築完了")
+        self.network_manager.send_to_server({"type": "force_broadcast_network_game_objects_components"})
         self.network_manager.complete_scene_sync = True
+    
+    def force_broadcast_network_game_objects_components(self):
+        """全クライアントに現在のオブジェクトのコンポーネントを再同期させる"""
+        network_object = self.current_scene.get_all_network_objects()
+        for obj in network_object:
+            obj.force_broadcast_components()

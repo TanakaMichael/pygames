@@ -34,6 +34,10 @@ class NetworkGameObject(GameObject):
             "class_name": self.__class__.__name__,  # **クラス名を送る**
         }
         self.network_manager.broadcast(spawn_data)
+    def force_broadcast_components(self):
+        for component in self.components.values():
+            if hasattr(component, "force_broadcast"):
+                component.force_broadcast()
 
     def receive_network_data(self, data):
         """すべてのネットワークコンポーネントにデータを渡す"""
