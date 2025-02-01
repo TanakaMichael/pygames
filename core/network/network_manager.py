@@ -27,6 +27,13 @@ class NetworkManager(Global):
         self.missing_object_requests = {}
         # 再送信するまでのタイムアウト（秒）
         self.request_timeout = 5
+
+        # NetworkIDの初期化
+        self.last_network_id = 0
+    def generate_network_id(self):
+        """ネットワークIDを生成"""
+        self.last_network_id += 1
+        return self.last_network_id
     def initialize(self, is_server=False):
         """サーバーの開始 or クライアントの参加"""
         self.is_server = is_server  # **サーバーかクライアントか**

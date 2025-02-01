@@ -3,7 +3,6 @@ from core.network.network_manager import NetworkManager
 
 class NetworkGameObject(GameObject):
     """ネットワーク上で同期されるオブジェクト"""
-    network_id_counter = 1  # **ID 管理**
 
     def __init__(self, name="NetworkGameObject", steam_id=-1, network_id=None):
         super().__init__(name)
@@ -16,7 +15,6 @@ class NetworkGameObject(GameObject):
     
 
         if self.network_manager.local_steam_id == steam_id:
-            NetworkGameObject.network_id_counter += 1
             self.is_local_player = True
 
         # **サーバーなら全クライアントにスポーン通知**
@@ -26,7 +24,7 @@ class NetworkGameObject(GameObject):
         if network_id:
             self.network_id = network_id
         else:
-            self.network_id = NetworkGameObject.network_id_counter
+            self.network_id = self.network_manager.generate_network_id() # 大体はサーバーが処理する
 
     def broadcast_spawn(self):
         """サーバーがクライアントにスポーン通知を送る"""
