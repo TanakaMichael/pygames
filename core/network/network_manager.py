@@ -6,6 +6,7 @@ import SteamNetworking as sn
 from core.global_event_manager import GlobalEventManager
 from core.coroutine import CoroutineManager, WaitForSeconds
 from core.global_singleton import Global
+import core.network.reconstruction as rc
 class NetworkManager(Global):
     """サーバーとクライアントの管理 + 退出・シャットダウン機能追加"""
     def __init__(self):
@@ -99,10 +100,10 @@ class NetworkManager(Global):
         if self.is_server:
             return
         while not self.connected:
-            buffer = ctypes.create_string_buffer(512)
+            buffer = ctypes.create_string_buffer(2048)
             sender_steam_id = ctypes.c_uint64()
 
-            if sn.receive_p2p_message(buffer, 512, ctypes.byref(sender_steam_id)):
+            if sn.receive_p2p_message(buffer,2048 , ctypes.byref(sender_steam_id)):
                 try:
                     data = json.loads(buffer.value.decode())
 
@@ -181,7 +182,7 @@ class NetworkManager(Global):
             if(self.is_server) :
                 self.broadcast(removal_data)
 
-            self.scene_manager.current_scene.remove_network_object(obj.network_id)
+            self.scene_manager.current_scene.remove_object(obj.network_id)
     def remove_network_object_by_network_id(self, network_id):
         """network_id を指定して `NetworkGameObject` のみ削除"""
         for obj in self.network_objects.values():
@@ -218,50 +219,71 @@ class NetworkManager(Global):
 
         print(f"🌍 シーン `{scene_name}` に変更 (ID: {scene_id})")
         self.set_active_scene(scene_name)
+    def process_received_message(self, message):
+        """
+        再構築済みまたは断片化されていない受信メッセージを処理する。
+        """
+        if message.get("type") == "PING":
+            return
+
+        # シーン側の処理へ流す
+        self.scene_manager.handle_network_data(message)
+
+        # network_id が付属している場合は該当オブジェクトに転送
+        network_id = message.get("network_id")
+        if network_id is None:
+            print("⚠ `network_id` が付属していないデータを無視")
+            return
+
+        obj = self.network_objects.get(network_id)
+        if obj:
+            obj.receive_network_data(message)
+        else:
+            print(f"⚠ `network_id={network_id}` のオブジェクトが存在しない")
     def receive_messages(self):
-        """受信データを対応する `NetworkGameObject` に渡す"""
+        """受信データを断片化対応で処理する"""
         while self.running:
-            buffer = ctypes.create_string_buffer(512)
+            buffer = ctypes.create_string_buffer(rc.FRAGMENT_BUFFER_SIZE)
             sender_steam_id = ctypes.c_uint64()
 
-            if sn.receive_p2p_message(buffer, 512, ctypes.byref(sender_steam_id)):
+            if sn.receive_p2p_message(buffer, rc.FRAGMENT_BUFFER_SIZE, ctypes.byref(sender_steam_id)):
                 try:
-                    data = json.loads(buffer.value.decode())
-                    # **PING は無視**
-                    if data.get("type") == "PING":
-                        continue
-                    # シーンのhandle_network_dataを呼び出す
-                    self.scene_manager.handle_network_data(data)
-
-                    # `network_id` が付属しているかチェック
-                    network_id = data.get("network_id")
-                    if network_id is None:
-                        print("⚠ `network_id` が付属していないデータを無視")
-                        continue
-                    
-
-                    # 該当のオブジェクトにデータを渡す
-                    obj = self.network_objects.get(network_id)
-                    if obj:
-                        obj.receive_network_data(data)
-                    else:
-                        print(f"⚠ `network_id={network_id}` のオブジェクトが存在しない")
-
+                    message = json.loads(buffer.value.decode('utf-8'))
                 except json.JSONDecodeError:
-                    print("❌ 受信データの JSON 解析に失敗")
                     continue
 
+                # 断片の場合は再構築を試みる
+                if message.get("type") == "fragment":
+                    complete_message = rc.handle_incoming_fragment(message)
+                    if complete_message:
+                        self.process_received_message(complete_message)
+                else:
+                    self.process_received_message(message)
+
             time.sleep(0.05)
+    def send_message(self, target_id, data):
+        """
+        送信するデータを JSON 化し、必要なら断片化して送信する。
+        """
+        message_bytes = json.dumps(data).encode('utf-8')
+        if len(message_bytes) > rc.FRAGMENT_BUFFER_SIZE:
+            rc.send_large_message(target_id, data, rc.FRAGMENT_BUFFER_SIZE)
+        else:
+            sn.send_p2p_message(target_id, message_bytes)
     def broadcast(self, data):
-        """サーバーが全クライアントにデータを送信"""
+        """サーバーが全クライアントにデータを送信（断片化対応版）"""
         for player_id in self.get_clients():
             if player_id and player_id != self.server_id:
-                sn.send_p2p_message(player_id, json.dumps(data).encode())
+                self.send_message(player_id, data)
 
     def send_to_server(self, data):
         """クライアントがサーバーにデータを送信"""
         if self.is_local_client:
-            sn.send_p2p_message(self.server_id, json.dumps(data).encode())
+            self.send_message(self.server_id, data)
+    def send_to_client(self, steam_id, data):
+        """サーバーがクライアントにデータを送信（断片化対応版）"""
+        if self.is_server:
+            self.send_message(steam_id, data)
 
     def leave_lobby(self):
         """クライアントがロビーから退出"""

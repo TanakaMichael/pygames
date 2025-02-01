@@ -42,6 +42,15 @@ class NetworkGameScene(GameScene):
         if isinstance(game_object, NetworkGameObject):
             if self.network_manager.is_server:
                 self.broadcast_remove(game_object.network_id)
+    def remove_object_by_network_id(self, network_id):
+        """network_id を指定して `NetworkGameObject` のみ削除"""
+        for obj in self.objects:
+            if isinstance(obj, NetworkGameObject) and obj.network_id == network_id:
+                self.remove_object(obj)
+                print(f"🗑 `network_id={network_id}` の `NetworkGameObject` を GameScene から削除")
+                return True
+        print(f"⚠ `network_id={network_id}` の `NetworkGameObject` が見つかりません")
+        return False
 
     def broadcast_spawn(self, game_object):
         """サーバーがクライアントにスポーン通知を送信"""
