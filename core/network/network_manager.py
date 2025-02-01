@@ -258,6 +258,8 @@ class NetworkManager(Global):
         obj = self.network_objects.get(network_id)
         if obj:
             obj.receive_network_data(message)
+            if network_id in self.missing_object_requests:
+                del self.missing_object_requests[network_id]
         else:
             if self.complete_scene_sync: # シーンの同期完了後にオブジェクトが存在しない場合は再送信の要請
                 print(f"⚠ `network_id={network_id}` のオブジェクトが存在しません。欠損オブジェクトリクエストキューに登録します。")

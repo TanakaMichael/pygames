@@ -63,7 +63,7 @@ class NetworkGameScene(GameScene):
         self.network_manager.broadcast(spawn_data)
     
     def send_missing_object(self, sender_id, network_id):
-        """クライアントがサーバーにオブジェクト再送要求を送信"""
+        """クライアントにオブジェクト再送要求を送信"""
         obj = self.get_object_by_network_id(network_id)
         spawn_data = {
             "type": "spawn_object",
@@ -71,7 +71,7 @@ class NetworkGameScene(GameScene):
             "steam_id": obj.steam_id,
             "class_name": obj.__class__.__name__,
         }
-        if obj:
+        if obj is not None:
             print(f"📡 クライアント {sender_id} に network_id {network_id} のオブジェクトを再送信")
             self.network_manager.send_to_client(sender_id, spawn_data)
 
