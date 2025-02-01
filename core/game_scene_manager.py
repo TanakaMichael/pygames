@@ -145,7 +145,7 @@ class GameSceneManager(Global):
         print("🔄 シーンを再構築...")
         if not self.set_active_scene_by_id(scene_id):
             return
-        # **NetworkGameObject のみを削除**
+        # **NetworkGameObject のみを削除** (ローカルGameObjectは生成されているがNetworkObjectのNetIDが同期されていないため)
         self.current_scene.objects = [
             obj for obj in self.current_scene.objects if not isinstance(obj, NetworkGameObject)
         ]

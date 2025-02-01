@@ -83,12 +83,6 @@ class NetworkManager(Global):
             print("❌ 参加できるロビーがありません")
             exit()
 
-        if sn.join_lobby(self.lobby_id):
-            print(f"✅ ロビーに参加しました！ ロビー ID: {self.lobby_id}")
-        else:
-            print("❌ ロビーへの参加に失敗しました")
-            exit()
-
         self.server_id = sn.get_lobby_owner(self.lobby_id)
         print(f"🎮 サーバーの Steam ID: {self.server_id}")
 
