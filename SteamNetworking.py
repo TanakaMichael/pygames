@@ -61,9 +61,9 @@ try:
     check_lobby_leave.restype = ctypes.c_bool
 
     # **SteamID からプレイヤー名を取得**
-    get_steam_name = steam_dll.GetSteamName
-    get_steam_name.argtypes = [ctypes.c_uint64, ctypes.c_char_p, ctypes.c_int]
-    get_steam_name.restype = None
+    get_steam_name_buffer = steam_dll.GetSteamName
+    get_steam_name_buffer.argtypes = [ctypes.c_uint64, ctypes.c_char_p, ctypes.c_int]
+    get_steam_name_buffer.restype = None
 
     # (1) フレンドロビーの検索
     refresh_friend_lobbies = steam_dll.RefreshFriendLobbies
@@ -176,3 +176,9 @@ def get_public_lobbies() -> list[int]:
         lobby_id = get_public_lobby_id_by_index(i)
         result.append(lobby_id)
     return result
+def get_steam_name(steam_id):
+    buffer_size = 256
+    buffer = ctypes.create_string_buffer(buffer_size)
+    # 関数呼び出し（steam_id は ctypes.c_uint64 か整数値で渡せる）
+    get_steam_name_buffer(steam_id, buffer, buffer_size)
+    return buffer.value.decode('utf-8')

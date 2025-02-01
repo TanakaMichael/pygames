@@ -79,6 +79,7 @@ class NetworkManager(Global):
             self.lobby_id = lobbies[0]
             sn.join_lobby(self.lobby_id)
             sn.set_lobby_rich_presence(self.lobby_id)
+            print(f"✅ LobbyID: {self.lobby_id}に参加しました！")
         else:
             print("❌ 参加できるロビーがありません")
             exit()
@@ -177,7 +178,12 @@ class NetworkManager(Global):
             sn.get_lobby_member_by_index(self.lobby_id, i)
             for i in range(sn.get_num_lobby_members(self.lobby_id))
         ]
-
+    def get_clients_name(self):
+        """現在のロビーにいるクライアントの名前リストを取得"""
+        return [
+            sn.get_steam_name(client_id)
+            for client_id in self.get_clients()
+        ]
     def send_ping(self):
         """サーバーがクライアントに PING を送信 (接続確認)"""
         while self.running and self.is_server:

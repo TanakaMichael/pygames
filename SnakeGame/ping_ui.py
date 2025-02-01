@@ -7,8 +7,13 @@ class PingUI(Panel):
     def __init__(self, name="PingUI", canvas=None):
         super().__init__(name, canvas)
         self.text = Text(canvas=canvas, name="Ping", font_size=30,position=pygame.Vector2(100, 100))
+        self.join_user = Text(canvas=canvas, name="users", font_size=30,position=pygame.Vector2(20, 20), position_mode="absolute")
         self.add_ui(self.text)
+        self.add_ui(self.join_user)
         self.network_manager = NetworkManager.get_instance()
     def update(self, dt):
         super().update(dt)
         self.text.text = f"Ping: {self.network_manager.ping_rate}"
+        self.join_user.text = "Users: "  # 初期化
+        for user in self.network_manager.get_clients_name():
+            self.join_user.text += f"{user}, "
