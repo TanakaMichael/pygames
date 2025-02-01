@@ -22,4 +22,4 @@ class FoodManager(NetworkGameObject):
             GameSceneManager.get_instance().current_scene.spawn_object(food)
 
 # **自動で NetworkObjectFactory に登録**
-NetworkObjectFactory.register_class(Food)
+NetworkObjectFactory.register_class(FoodManager)
