@@ -1,6 +1,7 @@
 from core.global_singleton import Global
 from core.network.network_object_factory import NetworkObjectFactory
 from core.network.network_manager import NetworkManager
+from core.network.network_game_object import NetworkGameObject
 import threading
 class GameSceneManager(Global):
     """シーン管理と、シーン内のオブジェクト管理"""
@@ -141,7 +142,10 @@ class GameSceneManager(Global):
         print("🔄 シーンを再構築...")
         if not self.set_active_scene_by_id(scene_id):
             return
-        self.current_scene.objects.clear()  # **現在のオブジェクトを削除**
+        # **NetworkGameObject のみを削除**
+        self.current_scene.objects = [
+            obj for obj in self.current_scene.objects if not isinstance(obj, NetworkGameObject)
+        ]
 
         for obj_data in scene_data["objects"]:
             new_obj = NetworkObjectFactory.create_object(
