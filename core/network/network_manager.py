@@ -137,7 +137,7 @@ class NetworkManager(Global):
                 except json.JSONDecodeError:
                     continue
 
-            if time.time() - self.last_ping_time > 20:
+            if time.perf_counter() - self.last_ping_time > 20:
                 print("❌ サーバーが応答しません。接続失敗!")
                 exit()
 
