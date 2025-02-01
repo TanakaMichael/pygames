@@ -45,7 +45,6 @@ class NetworkTransform(NetworkComponent):
             **self._get_current_state()
         }
         self.network_manager.broadcast(transform_data)
-        print(f"📡 broadcast transform for network_id={self.network_id}")
     def force_broadcast(self):
         """強制的に同期メッセージを送信するメソッド
         ※シーン更新完了時など、全ネットワークコンポーネントの最新状態をクライアントに送信する際に使用
@@ -58,4 +57,3 @@ class NetworkTransform(NetworkComponent):
             self.game_object.transform.position = pygame.Vector2(data["position_x"], data["position_y"])
             self.game_object.transform.scale = pygame.Vector2(data["scale_x"], data["scale_y"])
             self.game_object.transform.rotation = pygame.Vector3(data["rotation_x"], data["rotation_y"], data["rotation_z"])
-            print(f"📡 `network_id={self.network_id}` の Transform を更新")
