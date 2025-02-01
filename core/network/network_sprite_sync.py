@@ -14,11 +14,9 @@ class NetworkSpriteSync(Component):
             sprite_renderer = self.game_object.get_component(SpriteRenderer)
             if sprite_renderer:
                 sync_data = {
+                    "type": "sprite_update",
                     "network_id": self.game_object.network_id,
                     "image_path": sprite_renderer.image_path,
-                    "position": self.game_object.transform.position,
-                    "scale": self.game_object.transform.scale,
-                    "rotation": self.game_object.transform.rotation
                 }
                 self.network_manager.broadcast(sync_data)
 
