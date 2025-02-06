@@ -9,7 +9,6 @@ class AnimationManager(Component):
         self.animations = {}
         self.current_animation = None
         self.network_manager = game_object.network_manager
-        self.network_sync = game_object.get_component(NetworkAnimationSync)  # **ネットワーク同期コンポーネント**
         self.sprite_renderer = game_object.get_component(SpriteRenderer)  # **スプライトを取得**
         if not self.sprite_renderer:
             raise ValueError("AnimationManager は SpriteRenderer を必要とします")
@@ -22,22 +21,6 @@ class AnimationManager(Component):
         """アニメーションを切り替える (ネットワーク同期)"""
         if name in self.animations and self.current_animation != name:
             self.current_animation = name
-            if self.network_sync:
-                self.network_sync.trigger_animation(name)
-
-    def broadcast_animation_change(self, animation_name):
-        """サーバーがクライアントにアニメーション変更を送信"""
-        sync_data = {
-            "network_id": self.game_object.network_id,
-            "type": "animation_update",
-            "animation": animation_name
-        }
-        self.network_manager.broadcast(sync_data)
-
-    def handle_network_data(self, data):
-        """クライアントがアニメーションデータを適用"""
-        if data.get("type") == "animation_update" and data.get("network_id") == self.game_object.network_id:
-            self.play_animation(data["animation"])
 
     def update(self, delta_time):
         """アクティブなアニメーションを更新"""

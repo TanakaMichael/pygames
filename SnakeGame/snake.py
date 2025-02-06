@@ -2,7 +2,7 @@ from core.game_object import GameObject
 from core.network.network_game_object import NetworkGameObject
 from core.network.network_object_factory import NetworkObjectFactory
 from core.network.network_transform import NetworkTransform
-from core.component.sprite import SpriteRenderer
+from core.component.sprite import Sprite
 from core.component.transform import Transform
 from SnakeGame.snake_movement import SnakeMovement
 from SnakeGame.snake_collider import SnakeCollider
@@ -16,11 +16,11 @@ class Snake(NetworkGameObject):
         # **スプライトの設定**
         self.transform = self.add_component(Transform, position=pygame.Vector2(500, 500))
         self.network_transform = self.add_component(NetworkTransform)
-        self.sprite = self.add_component(SpriteRenderer, image_path="SnakeGame/assets/snake.png")
+        self.sprite = self.add_component(Sprite, image_path="SnakeGame/assets/snake.png", base_size=(0.1,0.1, "relative"))
         
         # **移動と衝突処理の追加**
         self.movement = self.add_component(SnakeMovement)
-        self.snake_collider = self.add_component(SnakeCollider, radius=16)
+        self.snake_collider = self.add_component(SnakeCollider, radius=50)
 
         # **スネークの全体処理を管理**
         self.player = self.add_component(Player)

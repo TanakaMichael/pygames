@@ -1,18 +1,14 @@
-from core.game_scene import GameScene
+from core.scene.game_scene import GameScene
 from core.network.network_manager import NetworkManager
 from core.network.network_object_factory import NetworkObjectFactory
 from core.network.network_game_object import NetworkGameObject
 
 class NetworkGameScene(GameScene):
     """ネットワーク対応の GameScene"""
-    network_scene_id_counter = 1  # **全シーンで統一する ID**
-
-
     def __init__(self, name, screen):
         super().__init__(name, screen)
         self.network_manager = NetworkManager.get_instance()
-        self.network_scene_id = NetworkGameScene.network_scene_id_counter
-        NetworkGameScene.network_scene_id_counter += 1
+        self.network_scene_id = self.network_manager.generate_scene_network_id()
 
     def start(self):
         """シーンがアクティブになったとき"""
@@ -20,6 +16,9 @@ class NetworkGameScene(GameScene):
             print(f"🌍 シーン `{self.name}` をサーバー側で開始")
         else:
             print(f"🎮 シーン `{self.name}` をクライアント側で開始")
+    def update(self, dt):
+        super().update(dt)
+        
         
 
     def get_all_network_objects(self):

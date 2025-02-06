@@ -2,6 +2,7 @@ from core.global_singleton import Global
 from core.network.network_object_factory import NetworkObjectFactory
 from core.network.network_manager import NetworkManager
 from core.network.network_game_object import NetworkGameObject
+from core.network.network_game_scene import NetworkGameScene
 import threading
 class GameSceneManager(Global):
     """シーン管理と、シーン内のオブジェクト管理"""
@@ -25,13 +26,19 @@ class GameSceneManager(Global):
         """アクティブなシーンを切り替え"""
         if name in self.scenes:
             if self.current_scene:
-                self.current_scene.active = False
+                self.current_scene.set_active(False)
             self.current_scene = self.scenes[name]
-            self.current_scene.start()
+            self.current_scene.set_active(True)
+        else:
+            print(f"gameScene: `{name}` が見つかりません")
+    def set_active_server_scene(self, name):
+        """サーバーでアクティブなシーンを切り替え"""
+        self.set_active_scene(name)
+        #self.network_manager.set_active_scene(name) # 自動client同期
     def set_active_scene_by_id(self, scene_id):
         """`NetworkGameSceneID` でシーンを切り替え"""
         for scene in self.scenes.values():
-            if scene.network_scene_id == scene_id:
+            if isinstance(scene, NetworkGameScene) and scene.network_scene_id == scene_id:
                 self.set_active_scene(scene.name)
                 return True
         print(f"⚠ シーン ID `{scene_id}` が見つかりません")
@@ -46,6 +53,10 @@ class GameSceneManager(Global):
         """アクティブシーンを描画"""
         if self.current_scene:
             self.current_scene.render(screen)
+    def handle_event(self, event):
+        """イベントを処理"""
+        if self.current_scene:
+            self.current_scene.handle_event(event)
     def get_current_scene(self):
         return self.current_scene
     def sync_scene_with_server(self):
@@ -107,7 +118,10 @@ class GameSceneManager(Global):
         }
         self.network_manager.send_to_client(steam_id, scene_data)
         print(f"📡 シーンデータを送信 {steam_id}")
-
+    def send_broadcast_scene_sync(self):
+        """シーンが更新された場合(サーバーがシーンを変えた)にclientに通知する"""
+        for steam_id in self.network_manager.get_clients():
+            self.send_scene_sync(steam_id)
     def send_scene_objects(self, target_id):
         """サーバーが新しいクライアントにシーンオブジェクトを送信"""
         scene = self.current_scene

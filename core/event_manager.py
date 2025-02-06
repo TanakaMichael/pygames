@@ -18,3 +18,6 @@ class EventManager:
         """イベントの登録解除"""
         if event_name in self.events:
             self.events[event_name].remove(callback)
+    def clear_events(self):
+        """すべてのイベントを解除"""
+        self.events.clear()

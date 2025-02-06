@@ -13,27 +13,39 @@ class Coroutine:
     def __init__(self, generator):
         self.generator = generator
         self.done = False
-        self.current_wait = None  # 待機オブジェクト
+        self.current_wait = None
+        self.first_step = True  # **最初のステップかどうかのフラグ**
 
     def step(self, delta_time):
         """コルーチンを1ステップ進める"""
         try:
-            if self.current_wait:  # もし待機中なら
-                if not self.current_wait.update(delta_time):  # 時間経過を確認
-                    return  # まだ待機中なら処理しない
+            if self.current_wait:
+                if not self.current_wait.update(delta_time):
+                    return
                 self.current_wait = None  # 待機が完了したら解除
 
-            result = next(self.generator)  # コルーチンを進める
+            # **最初のステップなら `next()` を使う**
+            if self.first_step:
+                result = next(self.generator)
+                self.first_step = False  # **最初のステップを完了**
+            else:
+                result = self.generator.send(delta_time)  
+
             if isinstance(result, WaitForSeconds):
-                self.current_wait = result  # 次の待機オブジェクトを設定
+                self.current_wait = result  
 
         except StopIteration:
-            self.done = True  # コルーチン終了
+            self.done = True  
+
+
 
 class CoroutineManager:
     """コルーチンを管理するクラス"""
     def __init__(self):
         self.coroutines = []
+    def clear(self):
+        """すべてのコルー��ンを停止"""
+        self.coroutines = []  # すべてのコルー��ンをリセットする
 
     def start_coroutine(self, func, *args):
         """関数をコルーチンとして開始"""

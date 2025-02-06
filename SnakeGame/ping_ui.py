@@ -1,13 +1,13 @@
 from core.game_object import GameObject
 from core.panel import Panel
-from core.UI.text import Text
+from core.UI.elements.text import Text
 from core.network.network_manager import NetworkManager
 import pygame
 class PingUI(Panel):
     def __init__(self, name="PingUI", canvas=None):
         super().__init__(name, canvas)
-        self.text = Text(canvas=canvas, name="Ping", font_size=30,position=pygame.Vector2(100, 100))
-        self.join_user = Text(canvas=canvas, name="users", font_size=30,position=pygame.Vector2(20, 20), position_mode="absolute")
+        self.text = Text(canvas=canvas, name="Ping",position=pygame.Vector2(100, 100))
+        self.join_user = Text(canvas=canvas, name="users",position=pygame.Vector2(20, 20), position_mode="absolute")
         self.add_ui(self.text)
         self.add_ui(self.join_user)
         self.network_manager = NetworkManager.get_instance()

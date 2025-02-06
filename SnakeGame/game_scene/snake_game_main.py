@@ -1,4 +1,4 @@
-from core.game_scene import GameScene
+from core.scene.game_scene import GameScene
 from SnakeGame.food_manager import FoodManager
 from SnakeGame.game_manager import GameManager
 from SnakeGame.snake import Snake

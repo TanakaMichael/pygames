@@ -12,7 +12,10 @@ class Component:
         """毎フレーム更新処理 (オーバーライド用)"""
         if not self.enabled:
             return False
-    def render(self, screen):
+    def render(self, surface, screen_pos, scale):
         """描画処理 (オーバーライド用)"""
         if not self.enabled:
             return False
+    def handle_event(self, event):
+        """イベントを処理 (オーバーライド用)"""
+        pass

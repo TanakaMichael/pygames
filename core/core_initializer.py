@@ -6,11 +6,10 @@ from core.game import Game
 class CoreInitializer:
     """ゲームのすべてのコアシステムを初期化"""
     
-    def __init__(self, is_server=False):
+    def __init__(self):
         print("🔧 コアシステムの初期化を開始...")
         # game
         self.game = Game.get_instance()
-        self.game.initialize(is_server)
 
         print("✅ コアシステムの初期化完了！")
     
@@ -26,3 +25,6 @@ class CoreInitializer:
         self.game.update(dt)
     def render(self, screen):
         self.game.render(screen)
+    def handle_event(self, event):
+        self.game.handle_event(event)
+        

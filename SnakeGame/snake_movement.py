@@ -1,13 +1,13 @@
 import pygame
 from core.component.component import Component
-from core.component.rigidbody import RigidBody
+from core.component.physics.rigidbody import RigidBody
 from core.input_manager import InputManager
 from core.network.network_manager import NetworkManager
 from core.component.transform import Transform
 
 class SnakeMovement(Component):
     """スネークの移動を管理"""
-    def __init__(self, game_object, speed=100):
+    def __init__(self, game_object, speed=2000):
         super().__init__(game_object)
         self.speed = speed
         self.direction = pygame.Vector2(1, 0)  # **初期方向は右**

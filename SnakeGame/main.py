@@ -1,7 +1,7 @@
 import pygame
 from core.game import Game
 from core.camera import Camera
-from core.game_scene import GameScene
+from core.scene.game_scene import GameScene
 from core.network.network_manager import NetworkManager
 from core.rigidbody import RigidBody
 from core.circle_collider import CircleCollider

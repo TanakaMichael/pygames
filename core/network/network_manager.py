@@ -31,18 +31,31 @@ class NetworkManager(Global):
         self.ema_alpha = 0.2
         self.last_ping_time = time.perf_counter()  # 高精度タイマーを利用
 
+        if sn.initialize_steam():
+            print("✅ Steam API 初期化成功")
+        self.local_steam_id = sn.get_steam_id()
+        self.is_server = False
+
         # NetworkIDの初期化
         self.last_network_id = 0
+        self.last_scene_network_id = 0
     def generate_network_id(self):
         """ネットワークIDを生成"""
         self.last_network_id += 1
         return self.last_network_id
+    def generate_scene_network_id(self):
+        """シーンネットワークIDを生成"""
+        # 必ずすべての環境で一律のIDを振り分けなければならない
+        self.last_scene_network_id += 1
+        return self.last_scene_network_id
     def initialize(self, is_server=False):
         """サーバーの開始 or クライアントの参加"""
         self.is_server = is_server  # **サーバーかクライアントか**
-        self.is_local_client = not is_server  # **ローカルクライアント**
+        self.is_client = not is_server  # **ローカルクライアント**
         from core.game_scene_manager import GameSceneManager
         self.scene_manager = GameSceneManager.get_instance()
+        from core.input_manager import InputManager
+        self.input_manager = InputManager.get_instance()
 
         if self.is_server:
             self.start_server()
@@ -63,6 +76,9 @@ class NetworkManager(Global):
 
         self.server_id = self.local_steam_id
         print(f"🏠 サーバー開始！ ロビー ID: {self.lobby_id}")
+
+        self.is_server = True
+        self.is_client = False
 
         # **スレッド起動**
         self.start_threads()
@@ -89,10 +105,18 @@ class NetworkManager(Global):
 
         # **P2P セッション確立**
         sn.accept_p2p_session(self.server_id)
+        self.is_server = False
+        self.is_client = True
 
         # **スレッド起動**
         self.start_threads()
-
+    def get_lobby_data(self, lobby_id):
+        """ロビー情報を取得"""
+        return (lobby_id, sn.get_lobby_owner(lobby_id))
+    def get_friend_lobby(self):
+        """最初の友��のロビーを取得"""
+        lobbies = sn.get_friend_lobbies_richpresence()
+        return lobbies
     def start_threads(self):
         """必要なスレッドを開始"""
         if self.is_server:
@@ -106,11 +130,11 @@ class NetworkManager(Global):
         threading.Thread(target=self.receive_messages, daemon=True).start()
 
         # 接続待機（クライアント側のみ）
-        if self.is_local_client:
+        if self.is_client:
             threading.Thread(target=self.wait_for_ping, daemon=True).start()
     def send_ping_request(self):
         """クライアント側が定期的にサーバーへ PING_REQUEST を送信する"""
-        while self.running and self.is_local_client:
+        while self.running and self.is_client:
             ping_request = {
                 "type": "PING_REQUEST",
                 "time": time.perf_counter(),
@@ -140,7 +164,7 @@ class NetworkManager(Global):
                         print("✅ サーバーとの接続が確立しました！")
 
                         # サーバーにシーンオブジェクトのリクエストを送信し、欠損オブジェクトチェックも開始
-                        if self.is_local_client:
+                        if self.is_client:
                             self.request_scene()
                             threading.Thread(target=self.check_missing_requests, daemon=True).start()
                         break
@@ -174,10 +198,17 @@ class NetworkManager(Global):
 
     def get_clients(self):
         """現在のロビーにいるクライアントのリストを取得"""
+        if self.lobby_id is None or self.lobby_id == 0:
+            return [self.local_steam_id]  # **自分のみをリストで返す**
+
         return [
             sn.get_lobby_member_by_index(self.lobby_id, i)
             for i in range(sn.get_num_lobby_members(self.lobby_id))
         ]
+    def get_num_lobby_members(self, lobby_id):
+        """ロビーにいるクライアント数を返す"""
+        return sn.get_num_lobby_members(self.lobby_id) if lobby_id else 0
+
     def get_clients_name(self):
         """現在のロビーにいるクライアントの名前リストを取得"""
         return [
@@ -307,6 +338,7 @@ class NetworkManager(Global):
 
         # シーン側の処理へ流す
         self.scene_manager.handle_network_data(message)
+        self.input_manager.handle_network_data(message)
 
         # network_id が付属している場合は該当オブジェクトに転送
         network_id = message.get("network_id")
@@ -362,7 +394,7 @@ class NetworkManager(Global):
 
     def send_to_server(self, data):
         """クライアントがサーバーにデータを送信"""
-        if self.is_local_client:
+        if self.is_client:
             self.send_message(self.server_id, data)
     def send_to_client(self, steam_id, data):
         """サーバーがクライアントにデータを送信（断片化対応版）"""
@@ -413,11 +445,6 @@ class NetworkManager(Global):
             joined_lobby_id = ctypes.c_uint64()
             if sn.check_lobby_join(ctypes.byref(joined_steam_id), ctypes.byref(joined_lobby_id)):
                 steam_id = joined_steam_id.value
-                # 重複チェック
-                clients = self.get_clients()
-                if steam_id in clients:
-                    print(f"参加したユーザーはすでに存在します。: {steam_id}")
-                    continue
                 self.global_event_manager.trigger_event("on_player_join", steam_id=steam_id)
 
             # **退出チェック**

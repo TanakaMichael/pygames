@@ -1,86 +1,75 @@
 import pygame
+import math
 from core.component.component import Component
 from core.component.transform import Transform
-import math
-class SpriteRenderer(Component):
-    """スプライトを描画するコンポーネント (2D)"""
+
+class Sprite(Component):
+    """カメラによる描画を前提とした 2D スプライトコンポーネント"""
     image_cache = {}  # 画像キャッシュ
 
-    def __init__(self, game_object, image_path, layer=0):
+    def __init__(self, game_object, image_path, layer=0, base_size=None):
+        """
+        :param image_path: スプライト画像のパス
+        :param layer: 描画レイヤー（数値が大きいほど手前に描画）
+        :param base_size: 
+            - None: 画像の元サイズを使用
+            - (width, height): ピクセル指定
+            - (ratio_x, ratio_y, "relative"): 画面比率で指定
+        """
         super().__init__(game_object)
         self.image_path = image_path
-        self.last_image_path = None
-        self.original_image = None
-        self.transformed_image = None
-        self.rect = None
         self.layer = layer
+        self.base_size = pygame.Vector2(base_size)
 
-        self.rotation_x = 0  # X軸回転 (傾き)
-        self.rotation_y = 0  # Y軸回転 (横回転)
-
-        # **Transform を取得**
+        # Transform コンポーネント取得
         self.transform = game_object.get_component(Transform)
         if not self.transform:
-            raise ValueError("SpriteRenderer は Transform コンポーネントを必要とします")
+            raise ValueError("Sprite には Transform コンポーネントが必要です")
 
-        # **カメラを取得**
-        from core.game_scene_manager import GameSceneManager
-        self.camera = GameSceneManager.get_instance().get_current_scene().camera
-
+        # 画像ロード
+        self.original_image = None
+        self.transformed_image = None
         self.load_image()
 
     def load_image(self):
-        """画像をロード (前回と異なる場合のみ)"""
-        if self.image_path != self.last_image_path:
-            if self.image_path in SpriteRenderer.image_cache:
-                self.original_image = SpriteRenderer.image_cache[self.image_path]
-            else:
-                self.original_image = pygame.image.load(self.image_path).convert_alpha()
-                SpriteRenderer.image_cache[self.image_path] = self.original_image
-            self.last_image_path = self.image_path
-            self.update_transform()
+        """画像のロードとキャッシュ"""
+        if self.image_path not in Sprite.image_cache:
+            Sprite.image_cache[self.image_path] = pygame.image.load(self.image_path).convert_alpha()
 
-    def update_transform(self):
-        """回転 & スケールを適用"""
-        if self.original_image:
-            # **回転 (rotation.z を 2D回転角とみなす)**
-            angle = -self.transform.rotation.z  # 2Dゲームの場合 z成分を使用
-            rotated = pygame.transform.rotate(self.original_image, angle)
+        self.original_image = Sprite.image_cache[self.image_path]
+        self.apply_base_size()
 
-            # **rect 設定 (center = transform.position)**
-            self.transformed_image = rotated
-            self.rect = self.transformed_image.get_rect()
-            self.rect.center = (self.transform.position.x, self.transform.position.y)
-    def apply_perspective_transform(self):
-        """擬似的なX/Y軸回転を適用"""
-        w, h = self.size
-        x_shear = math.tan(math.radians(self.rotation_y)) * w * 0.5  # Y軸回転による横方向の歪み
-        y_scale = math.cos(math.radians(self.rotation_x))  # X軸回転による縦の圧縮
-
-        # Pygameでは直接Shearができないため、頂点変換を行う
-        transformed_surf = pygame.transform.smoothscale(self.original_image, (w, int(h * y_scale)))
-        return transformed_surf, x_shear
+    def apply_base_size(self):
+        """基準サイズの適用（ズームや比率指定に対応）"""
+        if self.base_size:
+            if isinstance(self.base_size, tuple) and len(self.base_size) == 2:
+                self.original_image = pygame.transform.scale(
+                    self.original_image, (int(self.base_size[0]), int(self.base_size[1]))
+                )
 
     def update(self, delta_time):
-        """Transform の変更をチェック & 反映"""
+        """位置・回転・スケールの更新"""
         super().update(delta_time)
-        self.load_image()
         self.update_transform()
 
-    def render(self, screen):
-        """カメラでワールド座標 → スクリーン座標に変換して描画 (スケール適用)"""
-        super().render(screen)
+    def update_transform(self):
+        """Transform 情報を基にスプライトを変換"""
+        scale = self.transform.get_render_scale()
+        rotation = self.transform.get_render_rotation().z  # Z軸回転（2D）
+
+        # スケーリング
+        scaled_image = pygame.transform.scale(
+            self.original_image,
+            (int(self.original_image.get_width() * scale.x), int(self.original_image.get_height() * scale.y))
+        )
+
+        # 回転
+        self.transformed_image = pygame.transform.rotate(scaled_image, -rotation)
+
+    def render(self, surface, screen_position, scale):
+        """カメラから呼び出されて描画を実行"""
         if not self.transformed_image:
             return
-        # transformed_surf, x_shear = self.apply_perspective_transform()
-        # new_rect = transformed_surf.get_rect(center=self.position)
-        # **スクリーン座標に変換**
-        screen_pos = self.camera.to_screen_position(self.transform.position)
-        # **スケール (transform.scale) をカメラの screen_scale で適用**
-        screen_scale = self.camera.to_screen_scale(self.transform.scale)
-        final_width = int(self.transformed_image.get_width() * screen_scale.x)
-        final_height = int(self.transformed_image.get_height() * screen_scale.y)
 
-        # **最終的なスプライト**
-        scaled_image = pygame.transform.scale(self.transformed_image, (final_width, final_height))
-        screen.blit(scaled_image, screen_pos)
+        rect = self.transformed_image.get_rect(center=(int(screen_position.x), int(screen_position.y)))
+        surface.blit(self.transformed_image, rect)

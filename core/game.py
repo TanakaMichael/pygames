@@ -12,8 +12,8 @@ class Game:
     def __init__(self):
         if Game._instance is not None:
             raise Exception("Game はシングルトンです。`get_instance()` を使用してください")
-
         self.singletons = {}  # **シングルトンインスタンスを格納**
+        self.initialize()
 
     def register_component(self, component):
         """シングルトンコンポーネントを登録"""
@@ -29,15 +29,17 @@ class Game:
         from core.network.network_manager import NetworkManager
         from core.global_event_manager import GlobalEventManager
         from core.input_manager import InputManager
+        from core.game_scene_manager import GameSceneManager
 
         # **各シングルトンを登録**
         self.register_component(GameSceneManager.get_instance())
         self.register_component(NetworkManager.get_instance()) # スレッド動作
         self.register_component(GlobalEventManager.get_instance()) # 
         self.register_component(InputManager.get_instance())
+        self.register_component(GameSceneManager.get_instance())  # 初期シーン登録
 
         # **ネットワークをセットアップ**
-        self.setup_network(is_server)
+        # self.setup_network(is_server)
 
         print("✅ Game の初期化完了: すべてのシングルトンが登録されました")
 
@@ -57,3 +59,8 @@ class Game:
         for singleton in self.singletons.values():
             if hasattr(singleton, "render"):
                 singleton.render(screen)
+    def handle_event(self, event):
+        """��ーム全体のイベント処理"""
+        for singleton in self.singletons.values():
+            if hasattr(singleton, "handle_event"):
+                singleton.handle_event(event)

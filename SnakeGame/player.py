@@ -1,5 +1,5 @@
 from core.component.component import Component
-from core.component.circle_collider import CircleCollider
+from core.component.physics.circle_collider import CircleCollider
 class Player(Component):
     def __init__(self, game_object):
         super().__init__(game_object)
@@ -11,8 +11,9 @@ class Player(Component):
 
         game_object.event_manager.register_event("on_food_eaten", self.on_food_eaten)
         game_object.event_manager.register_event("on_snake_hit_wall", self.on_snake_hit_wall)
-    def on_food_eaten(self):
-        self.score += 1
+    def on_food_eaten(self, snake, food):
+        self.score += food.score
+        food.destroy()
         print(f"Score: {self.score}")
     def on_snake_hit_wall(self):
         self.is_alive = False

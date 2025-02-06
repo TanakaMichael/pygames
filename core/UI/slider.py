@@ -1,5 +1,5 @@
 import pygame
-from image import Image
+from core.UI.elements.image import Image
 
 class Slider:
     """スライダー UI コンポーネント"""
